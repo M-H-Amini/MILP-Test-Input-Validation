@@ -40,6 +40,7 @@ from torchvision.io.image import read_image
 from torchvision.io.image import ImageReadMode
 from torchvision.models.segmentation import fcn_resnet50, FCN_ResNet50_Weights
 from torchvision.transforms.functional import to_pil_image
+import torch
 
 
 
@@ -59,17 +60,120 @@ csv_file = "C:\\Users\\ASUS\\Desktop\\research\\mitacs project\\paper experiment
 df = pd.read_csv(csv_file)
 
 
+def computeMetrics(img_A, img_B):
+  
+  input_shape = (32,32)
+
+  #resizing our images:
+  img_A_new = cv2.resize(img_A,input_shape) #assuming (32,32) is the resolution we want
+  img_B_new = cv2.resize(img_B,input_shape)
+
+
+#CPL
+  num = (f_A - f_B)**2 
+  cpl_result = np.mean(num)
+
+#CS
+  model = VGG16(include_top=False, input_shape =input_shape)
+  features = Model(inputs=model.input, outputs=model.get_layer("block2_conv2").outputs)#why???
+  
+  pre_A = preprocess_input(img_A_new)
+  pre_B = preprocess_input(img_B_new)
+
+  f_A = features.predict(pre_A.reshape(1, 32, 32, 3)).flatten().reshape(1, -1)
+  f_B = features.predict(pre_B.reshape(1, 32, 32, 3)).flatten().reshape(1, -1)
+  cs_result = cosine_similarity(f_A,f_B)[0][0]
+
+
+#hist_cmp
+  
+  hist_corr = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_CORREL)
+  hist_inter = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_INTERSECT)
+
+#kl
+
+  g_A = cv2.cvtColor(img_A_new, cv2.COLOR_BGR2GRAY)
+  g_B = cv2.cvtColor(img_B_new, cv2.COLOR_BGR2GRAY)
+  hist_A = cv2.calcHist([g_A], [0], None, [256], [0,256])[:, 0] + 1e-10 #last part added to avoid division by 0 issues.
+  hist_B = cv2.calcHist([g_B], [0], None, [256], [0,256])[:, 0] + 1e-10
+  kl_result = np.sum(rel_entr(hist_A, hist_B))
+
+
+#mse
+  mse_result = my_mse(img_A_new, img_B_new)
+
+#psnr
+  psnr_result = cv2.PSNR(img_A_new, img_B_new)
+
+#ssim
+  img_A_float = img_as_float(img_A_new)
+  img_B_float = img_as_float(img_B_new)
+  ssim_result = structural_similarity (img_A_float, img_B_float, data_range=img_B_float.max()-img_B_float.min())
+
+#sss
+
+  weights = FCN_ResNet50_Weights.DEFAULT
+  model = fcn_resnet50(weights=weights)
+  model.eval()
+
+  tensor_A = weights.transforms()(read_image(img_A, mode=ImageReadMode.RGB)).unsqueeze(0)
+  tensor_B = weights.transforms()(read_image(img_B, mode=ImageReadMode.RGB)).unsqueexe(0)
+
+  #out_A = model(tensor_A)["out"].detach()
+  #out_B = model(tensor_B)["out"].detach()
+  with torch.no_grad():
+    out_A = model(tensor_A)["out"]
+    out_B = model(tensor_B)["out"]
+
+  mask_A = out_A.argmax(1).squeeze().numpy()
+  mask_B = out_B.argmax(1).squeeze().numpy()
+  sss_result = np.mean((mask_A - mask_B) ** 2)
+
+#tsi
+
+  ubyte_A = img_as_ubyte(color.rgb2gray(img_A_new))
+  ubyte_B = img_as_ubyte(color.rgb2gray(img_B_new))
+  glcm_A = graycomatrix(ubyte_A, distances=[5], angles=[0], levels=256, symmetric=True, normed=True)
+  glcm_B = graycomatrix(ubyte_B, distances=[5], angles=[0], levels=256, symmetric=True, normed=True)
+  glcm_contrast = abs(graycoprops(glcm_A, 'contrast')[0, 0] - graycoprops(glcm_B, 'contrast')[0, 0])
+  glcm_dissim = abs(graycoprops(glcm_A, 'dissimilarity')[0, 0] - graycoprops(glcm_B, 'dissimilarity')[0, 0])
+
+#wd
+
+  wd_result = wasserstein_distance(g_A.flatten(), g_B.flatten())
+
+#vif
+
+  metrics = np.array([cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, glcm_contrast, glcm_dissim, wd_result])
+  return metrics
+
+
+
+if __name__ == "__main__":
+  #set img_A and img_B
+  img_A = cv2.imread("") # add path to the .png
+  img_B = cv2.imread("") # add path to the .png
+
+  #compute associated metrics
+  metrics = computeMetrics(img_A, img_B)
+
+
+
 
 #METRICS: computes various image quality and similarity metrics
+"""
 def metrics(img_shape, csv_file ):
     
     # Use dictionary to store each metric data:
     metrics = {"PSNR": psnr(csv_file), "SSIM":ssim(csv_file), "MSE":mse(csv_file), "TSI": tsi(csv_file), "WS": wd(csv_file),"CS":cs(csv_file), "KL": kl(csv_file), "Hist_cmp":hist_cmp(csv_file), "CPL":cpl(csv_file),"SSS":sss(csv_file), "VIF":vif(csv_file)}
     return metrics
 
+"""
+
 
 # The code for majority of these metrics can be found in ICSE2025Industry.
 # Classifier Perceptual Loss using VGG16
+
 def cpl(csv_file,df):
     dataset_length = len(df)
     img_org, img_gen = [], []
