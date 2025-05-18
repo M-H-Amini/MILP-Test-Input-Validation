@@ -47,8 +47,6 @@ import torch
 #####################################################
 """
 NOTE:
-To save time, I used the implementations of each metric from the ICSE2025Industry repository and made some modifications here and there.
-However, if you'd prefer a different approach, I’d be happy to rewrite and implement them independently!
 
 """
 #####################################################
@@ -68,21 +66,33 @@ def computeMetrics(img_A, img_B):
   img_A_new = cv2.resize(img_A,input_shape) #assuming (32,32) is the resolution we want
   img_B_new = cv2.resize(img_B,input_shape)
 
+#CS
+  model = VGG16(include_top=False, input_shape =input_shape)
+  #Only extracts mid to low level features (no deep ones)
+  features = model(inputs=model.input, outputs=model.get_layer("block2_conv2").outputs)
+  
+  #preprocesses img_A and img_B to be used by VGG16
+  #via converting RBG to BGR, scaling and zero-centering with respected to Imagenet datatset
+  pre_A = preprocess_input(img_A_new)
+  pre_B = preprocess_input(img_B_new)
+
+  
+  batch = np.stack([pre_A,pre_B])
+  f_features = features.predict(batch)
+  f_A, f_B = f_features[0].flatten(), f_features[1].flatten()
+  
+  """
+  f_A = features.predict(pre_A.reshape(1, 32, 32, 3)).flatten().reshape(1, -1)
+  f_B = features.predict(pre_B.reshape(1, 32, 32, 3)).flatten().reshape(1, -1) #convert to ont-to-many
+  
+  """
+  
+  #orthogonal (no similarities)
+  cs_result = cosine_similarity([f_A],[f_B])[0][0] 
 
 #CPL
   num = (f_A - f_B)**2 
   cpl_result = np.mean(num)
-
-#CS
-  model = VGG16(include_top=False, input_shape =input_shape)
-  features = Model(inputs=model.input, outputs=model.get_layer("block2_conv2").outputs)#why???
-  
-  pre_A = preprocess_input(img_A_new)
-  pre_B = preprocess_input(img_B_new)
-
-  f_A = features.predict(pre_A.reshape(1, 32, 32, 3)).flatten().reshape(1, -1)
-  f_B = features.predict(pre_B.reshape(1, 32, 32, 3)).flatten().reshape(1, -1)
-  cs_result = cosine_similarity(f_A,f_B)[0][0]
 
 
 #hist_cmp
@@ -91,11 +101,18 @@ def computeMetrics(img_A, img_B):
   hist_inter = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_INTERSECT)
 
 #kl
-
+#calculates how the much the hisotgram of A differs from histogram of B
+  #converts to grayscale
   g_A = cv2.cvtColor(img_A_new, cv2.COLOR_BGR2GRAY)
   g_B = cv2.cvtColor(img_B_new, cv2.COLOR_BGR2GRAY)
+  #calculates intensity (in grayscale) of pixel to compare, puts it into a 1D array
   hist_A = cv2.calcHist([g_A], [0], None, [256], [0,256])[:, 0] + 1e-10 #last part added to avoid division by 0 issues.
   hist_B = cv2.calcHist([g_B], [0], None, [256], [0,256])[:, 0] + 1e-10
+ 
+ #normalize the histograms + avoid division by 0 issues
+  hist_A = np.clip(hist_A/np.sum(hist_A), 1e-10, None)
+  hist_B = np.clip(hist_B/np.sum(hist_B), 1e-10, None)
+
   kl_result = np.sum(rel_entr(hist_A, hist_B))
 
 
@@ -116,11 +133,14 @@ def computeMetrics(img_A, img_B):
   model = fcn_resnet50(weights=weights)
   model.eval()
 
+  #normalizes, resizes and converts images
   tensor_A = weights.transforms()(read_image(img_A, mode=ImageReadMode.RGB)).unsqueeze(0)
-  tensor_B = weights.transforms()(read_image(img_B, mode=ImageReadMode.RGB)).unsqueexe(0)
+  tensor_B = weights.transforms()(read_image(img_B, mode=ImageReadMode.RGB)).unsqueeze(0)
 
   #out_A = model(tensor_A)["out"].detach()
   #out_B = model(tensor_B)["out"].detach()
+  
+  #no gradient tracking to save memory
   with torch.no_grad():
     out_A = model(tensor_A)["out"]
     out_B = model(tensor_B)["out"]
@@ -130,7 +150,19 @@ def computeMetrics(img_A, img_B):
   sss_result = np.mean((mask_A - mask_B) ** 2)
 
 #tsi
+  angles = [0] #can be more
+  distances = [5] #can be more
 
+  #assuming that distances = [5] (5px apart) and angles = [0] (horizontal to each other)
+  glcm_A = compute_glcm_features(img_A_new, distances=distances, angles=angles) 
+  glcm_B = compute_glcm_features(img_B_new, distances=distances, angles=angles) 
+
+  glcm_contrast = abs(graycoprops(glcm_A, 'contrast')[0, 0] - graycoprops(glcm_B, 'contrast')[0, 0])
+  glcm_dissim = abs(graycoprops(glcm_A, 'dissimilarity')[0, 0] - graycoprops(glcm_B, 'dissimilarity')[0, 0])
+
+  tsi_result = (glcm_contrast + glcm_dissim)/2
+
+  """
   ubyte_A = img_as_ubyte(color.rgb2gray(img_A_new))
   ubyte_B = img_as_ubyte(color.rgb2gray(img_B_new))
   glcm_A = graycomatrix(ubyte_A, distances=[5], angles=[0], levels=256, symmetric=True, normed=True)
@@ -138,13 +170,15 @@ def computeMetrics(img_A, img_B):
   glcm_contrast = abs(graycoprops(glcm_A, 'contrast')[0, 0] - graycoprops(glcm_B, 'contrast')[0, 0])
   glcm_dissim = abs(graycoprops(glcm_A, 'dissimilarity')[0, 0] - graycoprops(glcm_B, 'dissimilarity')[0, 0])
 
+  """
+ 
 #wd
 
   wd_result = wasserstein_distance(g_A.flatten(), g_B.flatten())
 
-#vif
+#no vif => only gotten from a csv file.
 
-  metrics = np.array([cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, glcm_contrast, glcm_dissim, wd_result])
+  metrics = np.array([cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, tsi_result, wd_result])
   return metrics
 
 
@@ -156,7 +190,6 @@ if __name__ == "__main__":
 
   #compute associated metrics
   metrics = computeMetrics(img_A, img_B)
-
 
 
 
