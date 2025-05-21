@@ -1,14 +1,32 @@
 
+#Working with images:
 from PIL import Image
-from pandas import *
 import requests
 from io import BytesIO
-from collections import defaultdict
+
+# Data handlings
+from pandas import *
+
+#from collections import defaultdict
+
+
 
 
 def download_img(url):
+
+  """
+  _summary_
+
+  Args:
+    url (string): url link for the image we wish to download
+
+  Returns: 
+    Image: returns the image stored at that link
+  
+  """
   img = requests.get(url)
   return Image.open(BytesIO(img.content))
+ 
   """
   except Exception as e:
         print(f"Failed to load image: {url} — {e}")
@@ -18,29 +36,40 @@ def download_img(url):
 
 
 def id_extracter(url):
+  """_summary_
+
+  Args:
+      url (String): url link for the image we wish to download
+
+  Returns:
+      String: returns the id associated to the original image
+  """
   name = url.split("/")[-1]
   img_id = name.split("_",1)[0] #separates at last underscore
   return img_id
 
 
 
-#for any csv
+#reader for any csv
 def csv_reader(csv_path, chosen_label):
+
+  """
+  Args:
+      csv_path (csv): path to the csv file with our images
+      chosen_label (String): basis that will allow us to determine if the valdiity of an image is 1 or 0 
+
+  Returns:
+      list: returns list containing groups consisting of image pairs and their validity label
+  """
+
   df = read_csv(csv_path)
 
-  # new column for image ids
+  #new column for image ids
   df['img_id'] = df['image_link'].apply(id_extracter)
-
-  #assuming that will be the column title for the links
-  #links = df['image_link'].tolist()
-  #total = len(links)
-  #assuming that will be the column title for the label
-  #valid = df['ground_truth'].tolist()
   pairs = []
   
 
   #Image Pairs:
-
   for img_id, group in df.groupby('img_id'):
     origin = group[group["transform"] == "original"]
     if len(origin) == 0:
@@ -63,12 +92,10 @@ def csv_reader(csv_path, chosen_label):
         else:
            validLabel = 0
 
-        # do we need an IQA label as well?
-       
+
         item = {'img1':img1, 'img2':img2, 'label':validLabel}
         pairs.append(item)
         #item = (img1, img2, label)
-        #pairs.append((img1, img2, label))
   
   print(f"Loaded {len(pairs)} image pairs.")
   return pairs
@@ -76,7 +103,33 @@ def csv_reader(csv_path, chosen_label):
 
 
 
-  """for i in range(0, total-1,2):
+if __name__ == '__main__':
+
+  #You can use a different csv file. This is just a sample
+  csv_file = "imagenet_experiment_results.csv"
+  chosen_label = "car"
+  myPairs = csv_reader(csv_file, chosen_label)
+  print(
+    "List with image pairs and their validity labels: " 
+  )
+  
+  x = 1
+  for i in myPairs:
+    print(f"Pair {x}: Label = {i['label']}")
+    x+=1
+
+  
+
+
+
+
+
+  """
+
+    OLD CODE:
+  
+  
+    for i in range(0, total-1,2):
    #image pairs
     url1 = links[i]
     img1 = Image.open(BytesIO(requests.get(url1).content))
