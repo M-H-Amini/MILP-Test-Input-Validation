@@ -9,6 +9,8 @@ import pandas as pd
 # Progress bar
 from tqdm import tqdm
 
+# Handle images
+from PIL import Image
 
 # Deep learning
 import tensorflow.keras
@@ -44,20 +46,6 @@ import torch
 
 
 
-#####################################################
-"""
-NOTE:
-
-"""
-#####################################################
-
-
-
-# Global Setup
-csv_file = "C:\\Users\\ASUS\\Desktop\\research\\mitacs project\\paper experiments\\cifar dataset\\cifar_dataset_modified.csv"
-df = pd.read_csv(csv_file)
-
-
 def computeMetrics(img_A, img_B):
   """_summary_
 
@@ -83,17 +71,10 @@ def computeMetrics(img_A, img_B):
   #via converting RBG to BGR, scaling and zero-centering with respected to Imagenet datatset
   pre_A = preprocess_input(img_A_new)
   pre_B = preprocess_input(img_B_new)
-
   
   batch = np.stack([pre_A,pre_B])
   f_features = features.predict(batch)
   f_A, f_B = f_features[0].flatten(), f_features[1].flatten()
-  
-  """
-  f_A = features.predict(pre_A.reshape(1, 32, 32, 3)).flatten().reshape(1, -1)
-  f_B = features.predict(pre_B.reshape(1, 32, 32, 3)).flatten().reshape(1, -1) #convert to ont-to-many
-  
-  """
   
   #orthogonal (no similarities)
   cs_result = cosine_similarity([f_A],[f_B])[0][0] 
@@ -102,14 +83,11 @@ def computeMetrics(img_A, img_B):
   num = (f_A - f_B)**2 
   cpl_result = np.mean(num)
 
-
 #hist_cmp
-  
   hist_corr = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_CORREL)
   hist_inter = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_INTERSECT)
 
 #kl
-#calculates how the much the hisotgram of A differs from histogram of B
   #converts to grayscale
   g_A = cv2.cvtColor(img_A_new, cv2.COLOR_BGR2GRAY)
   g_B = cv2.cvtColor(img_B_new, cv2.COLOR_BGR2GRAY)
@@ -123,7 +101,6 @@ def computeMetrics(img_A, img_B):
 
   kl_result = np.sum(rel_entr(hist_A, hist_B))
 
-
 #mse
   mse_result = my_mse(img_A_new, img_B_new)
 
@@ -136,7 +113,6 @@ def computeMetrics(img_A, img_B):
   ssim_result = structural_similarity (img_A_float, img_B_float, data_range=img_B_float.max()-img_B_float.min())
 
 #sss
-
   weights = FCN_ResNet50_Weights.DEFAULT
   model = fcn_resnet50(weights=weights)
   model.eval()
@@ -170,18 +146,7 @@ def computeMetrics(img_A, img_B):
 
   tsi_result = (glcm_contrast + glcm_dissim)/2
 
-  """
-  ubyte_A = img_as_ubyte(color.rgb2gray(img_A_new))
-  ubyte_B = img_as_ubyte(color.rgb2gray(img_B_new))
-  glcm_A = graycomatrix(ubyte_A, distances=[5], angles=[0], levels=256, symmetric=True, normed=True)
-  glcm_B = graycomatrix(ubyte_B, distances=[5], angles=[0], levels=256, symmetric=True, normed=True)
-  glcm_contrast = abs(graycoprops(glcm_A, 'contrast')[0, 0] - graycoprops(glcm_B, 'contrast')[0, 0])
-  glcm_dissim = abs(graycoprops(glcm_A, 'dissimilarity')[0, 0] - graycoprops(glcm_B, 'dissimilarity')[0, 0])
-
-  """
- 
 #wd
-
   wd_result = wasserstein_distance(g_A.flatten(), g_B.flatten())
 
 #no vif => only gotten from a csv file.
@@ -189,12 +154,7 @@ def computeMetrics(img_A, img_B):
   metrics = np.array([cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, tsi_result, wd_result])
   return metrics
 
-
-
-
 if __name__ == "__main__":
-
-
   """ _description_
   
   Sets your CV file in order to extract your two images.
@@ -213,7 +173,6 @@ if __name__ == "__main__":
 
   csv_file = "imagenet_experiment_results.csv"
   df = pd.read_csv(csv_file)
-
   
   image_pathA = "sampleImages/n02009912_5558.jpg" 
   img_A = Image.open(image_pathA)
@@ -239,12 +198,20 @@ if __name__ == "__main__":
         +", WD: " + str(metrics[10]))
 
 
-
 """
 
 
-# The code for majority of these metrics can be found in ICSE2025Industry.
-# Classifier Perceptual Loss using VGG16
+
+
+
+#####################################################
+"""
+NOTE:
+The code for majority of these metrics can be found in ICSE2025Industry.
+
+"""
+#####################################################
+
 
 def cpl(csv_file,df):
     dataset_length = len(df)
