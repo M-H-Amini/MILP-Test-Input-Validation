@@ -59,7 +59,15 @@ df = pd.read_csv(csv_file)
 
 
 def computeMetrics(img_A, img_B):
-  
+  """_summary_
+
+  Args:
+      img_A (np.array): The first image
+      img_B (np.array): The second image
+
+  Returns:
+      np.array: The metrics of the two images  
+  """
   input_shape = (32,32)
 
   #resizing our images:
