@@ -191,23 +191,54 @@ def computeMetrics(img_A, img_B):
 
 
 
+
 if __name__ == "__main__":
-  #set img_A and img_B
-  img_A = cv2.imread("") # add path to the .png
-  img_B = cv2.imread("") # add path to the .png
 
-  #compute associated metrics
+
+  """ _description_
+  
+  Sets your CV file in order to extract your two images.
+  
+  Then, assigns img_A and img_B to an image respectively, 
+  then computes the associated metrics using the computeMetrics function.
+  Although you would need to extract these two images from a csv file,
+  for the sake of demonstrating how the function computeMetrics works,
+  we have provided a ready-made sample-pair for you to use.
+
+  You would need to use these lines for the images if you were to use it:
+    img_A = cv2.imread(" path of image ")
+    img_B = cv2.imread(" path of image ") 
+     
+  """
+
+  csv_file = "imagenet_experiment_results.csv"
+  df = pd.read_csv(csv_file)
+
+  
+  image_pathA = "sampleImages/n02009912_5558.jpg" 
+  img_A = Image.open(image_pathA)
+  #img_A.show()
+
+  image_pathB = "sampleImages/n02009912_14750.JPEG.gaussian_noise_932.png"  # Replace with the actual path to your image
+  img_B = Image.open(image_pathB)
+  #img_B.show()
+  
   metrics = computeMetrics(img_A, img_B)
+  #[cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, tsi_result, wd_result]
+  print("The Computed Metrics for Image A and Image B: "+
+        "CPL: "+str(metrics[0])
+        +", CS: " + str(metrics[1])
+        +", KL: " + str(metrics[2])
+        +", MSE: " + str(metrics[3])
+        +", HIST_CORR: " + str(metrics[4])
+        +", HIST_INTER: " + str(metrics[5])
+        +", PSNR: " + str(metrics[6])
+        +", SSIM: " + str(metrics[7])
+        +", SSS: " + str(metrics[8])
+        +", TSI: " + str(metrics[9])
+        +", WD: " + str(metrics[10]))
 
 
-
-#METRICS: computes various image quality and similarity metrics
-"""
-def metrics(img_shape, csv_file ):
-    
-    # Use dictionary to store each metric data:
-    metrics = {"PSNR": psnr(csv_file), "SSIM":ssim(csv_file), "MSE":mse(csv_file), "TSI": tsi(csv_file), "WS": wd(csv_file),"CS":cs(csv_file), "KL": kl(csv_file), "Hist_cmp":hist_cmp(csv_file), "CPL":cpl(csv_file),"SSS":sss(csv_file), "VIF":vif(csv_file)}
-    return metrics
 
 """
 
