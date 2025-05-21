@@ -1,16 +1,28 @@
 
 #Working with images:
+import time
 from PIL import Image
 import requests
 from io import BytesIO
+from tqdm import tqdm
 
 # Data handlings
 from pandas import *
 
-#from collections import defaultdict
+#Preventing the Connection reset by peer
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+#Setting up sessions with retries. Code for now, might change later
+session = requests.Session()
+retries = Retry(total = 3, backoff_factor = 1, status_forcelist = [500,502,503,504], raise_on_status = False )
+adapter = HTTPAdapter(max_retries=retries)
+session.mount('http://', adapter)
+session.mount('http://', adapter)
 
 
 def download_img(url):
+
   """
   _summary_
 
@@ -21,10 +33,27 @@ def download_img(url):
     Image: returns the image stored at that link
   
   """
-  img = requests.get(url)
+
+  img = session.get(url, timeout=10)
+  img.raise_for_status()
+  time.sleep(0.5) # prevent spamming server
   return Image.open(BytesIO(img.content))
- 
+  
+
+
+  
+
   """
+  try:
+    img = session.get(url, timeout=10)
+    img.raise_for_status()
+    time.sleep(0.5) # prevent spamming server
+    return Image.open(BytesIO(img.content))
+    
+  except Exception as e:
+    print(f"Failed to load image: {url} — {e}")
+    return None
+    
   except Exception as e:
         print(f"Failed to load image: {url} — {e}")
         return None
@@ -49,6 +78,7 @@ def id_extracter(url):
 
 #reader for any csv
 def csv_reader(csv_path, chosen_label):
+
   """
   Args:
       csv_path (csv): path to the csv file with our images
@@ -66,7 +96,7 @@ def csv_reader(csv_path, chosen_label):
   
 
   #Image Pairs:
-  for img_id, group in df.groupby('img_id'):
+  for img_id, group in tqdm(df.groupby('img_id'), desc="Processing image pairs"):
     origin = group[group["transformation"] == "original"]
     if len(origin) == 0:
         # Skip if no original images
