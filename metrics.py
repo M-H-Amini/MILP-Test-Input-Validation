@@ -205,11 +205,11 @@ if __name__ == "__main__":
 
 
 #####################################################
-"""
+
 NOTE:
 The code for majority of these metrics can be found in ICSE2025Industry.
 
-"""
+
 #####################################################
 
 
@@ -453,7 +453,7 @@ def vif(csv_file):
   vif.to_csv("vif_results.vsf", index=False)
   #should we return vif?
 
-
+"""
 
 
 
