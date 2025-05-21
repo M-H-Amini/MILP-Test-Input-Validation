@@ -10,10 +10,7 @@ from pandas import *
 #from collections import defaultdict
 
 
-
-
 def download_img(url):
-
   """
   _summary_
 
@@ -52,7 +49,6 @@ def id_extracter(url):
 
 #reader for any csv
 def csv_reader(csv_path, chosen_label):
-
   """
   Args:
       csv_path (csv): path to the csv file with our images
@@ -71,7 +67,7 @@ def csv_reader(csv_path, chosen_label):
 
   #Image Pairs:
   for img_id, group in df.groupby('img_id'):
-    origin = group[group["transform"] == "original"]
+    origin = group[group["transformation"] == "original"]
     if len(origin) == 0:
         # Skip if no original images
         continue  
@@ -81,7 +77,7 @@ def csv_reader(csv_path, chosen_label):
     img1 = download_img(origin_row["image_link"])
 
     for _, row in group.iterrows():
-        if row["transform"] == "original":
+        if row["transformation"] == "original":
             # skip original => we already have it
             continue  
         
@@ -117,11 +113,6 @@ if __name__ == '__main__':
   for i in myPairs:
     print(f"Pair {x}: Label = {i['label']}")
     x+=1
-
-  
-
-
-
 
 
   """
