@@ -4,8 +4,9 @@ from PIL import Image
 import requests
 from io import BytesIO
 from tqdm import tqdm
+"""import matplotlib
+matplotlib.use('TkAgg')  # or try 'Qt5Agg' if installed"""
 import matplotlib.pyplot as plt
-
 # Data handlings
 import pandas as pd
 import os
@@ -95,9 +96,14 @@ def prefix_extracter(url):
       String: returns the prefix associated to a specific image
   """
    
-  filename = url.split("/")[-1]
-  prefix = filename.split("_")[0] + "_" + filename.split("_")[-1].split(".")[0]
+  filename = url.split("/")[-1] # splits at last /
+#    prefix = filename.split("_")[0] + "_" + filename.split("_")[-1].split(".")[0] #only take first half
+  prefix = filename.split(".")[0]+"."+filename.split(".")[1]
   return prefix
+
+"""
+noo as in: n02009912_5558.JPEG is the original while  n02009912_5558.JPEG.gaussian_noise_932.png is the altered
+"""
 
 #reader for any csv
 def csv_reader(csv_path, chosen_label):
@@ -216,8 +222,11 @@ def display_img(index, myPairs):
 
       fig.suptitle(f"Validity: {pair_at_index['label']}", fontsize=16)
       plt.tight_layout()
-      plt.show(block=True)
+      #plt.show(block=True)
 
+      output_file = f"display_pair_{index}.png"
+      plt.savefig(output_file)
+      plt.close()
       print(f"Pair index: {index}")
       print(f"img1: {img1_path}, img2: {img2_path}")
 
@@ -226,6 +235,9 @@ def display_img(index, myPairs):
       print("Error => index out of bounds")
       return
   
+
+  
+
 
 if __name__ == '__main__':
 
