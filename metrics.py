@@ -13,9 +13,9 @@ from tqdm import tqdm
 from PIL import Image
 
 # Deep learning
-import tensorflow.keras
-from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.applications.vgg16 import preprocess_input
+import tensorflow as tf
+from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
+
 #from tensorflow.keras.losses import mean_squared_error as mse
 #commented out since we already manually calculate the mse
 
@@ -56,16 +56,16 @@ def computeMetrics(img_A, img_B):
   Returns:
       np.array: The metrics of the two images  
   """
-  input_shape = (32,32)
+  input_shape = (224,224,3)
 
   #resizing our images:
-  img_A_new = cv2.resize(img_A,input_shape) #assuming (32,32) is the resolution we want
-  img_B_new = cv2.resize(img_B,input_shape)
+  img_A_new = cv2.resize(img_A,input_shape[:2]) #assuming (32,32) is the resolution we want
+  img_B_new = cv2.resize(img_B,input_shape[:2])
 
 #CS
-  model = VGG16(include_top=False, input_shape =input_shape)
+  features = model = VGG16(include_top=False, input_shape =input_shape)
   #Only extracts mid to low level features (no deep ones)
-  features = model(inputs=model.input, outputs=model.get_layer("block2_conv2").outputs)
+  # features = model(inputs=model.input, outputs=model.get_layer("block2_conv2").output)
   
   #preprocesses img_A and img_B to be used by VGG16
   #via converting RBG to BGR, scaling and zero-centering with respected to Imagenet datatset
@@ -83,9 +83,7 @@ def computeMetrics(img_A, img_B):
   num = (f_A - f_B)**2 
   cpl_result = np.mean(num)
 
-#hist_cmp
-  hist_corr = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_CORREL)
-  hist_inter = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_INTERSECT)
+
 
 #kl
   #converts to grayscale
@@ -95,6 +93,11 @@ def computeMetrics(img_A, img_B):
   hist_A = cv2.calcHist([g_A], [0], None, [256], [0,256])[:, 0] + 1e-10 #last part added to avoid division by 0 issues.
   hist_B = cv2.calcHist([g_B], [0], None, [256], [0,256])[:, 0] + 1e-10
  
+#hist_cmp
+  hist_corr = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_CORREL)
+  hist_inter = cv2.compareHist(hist_A.reshape(-1,1), hist_B.reshape(-1,1), cv2.HISTCMP_INTERSECT)
+
+
  #normalize the histograms + avoid division by 0 issues
   hist_A = np.clip(hist_A/np.sum(hist_A), 1e-10, None)
   hist_B = np.clip(hist_B/np.sum(hist_B), 1e-10, None)
@@ -110,7 +113,7 @@ def computeMetrics(img_A, img_B):
 #ssim
   img_A_float = img_as_float(img_A_new)
   img_B_float = img_as_float(img_B_new)
-  ssim_result = structural_similarity (img_A_float, img_B_float, data_range=img_B_float.max()-img_B_float.min())
+  ssim_result = structural_similarity(img_A_float, img_B_float, data_range=img_B_float.max()-img_B_float.min())
 
 #sss
   weights = FCN_ResNet50_Weights.DEFAULT
@@ -153,6 +156,25 @@ def computeMetrics(img_A, img_B):
 
   metrics = np.array([cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, tsi_result, wd_result])
   return metrics
+
+def my_mse(img1, img2):
+    h, w, c = img1.shape
+    err = np.sum(cv2.subtract(img1, img2)**2)
+    return err/float(w*h*c)
+
+def compute_glcm_features(image, distances, angles):
+ # Compute GLCM
+    gray_image = img_as_ubyte(color.rgb2gray(image))
+    glcm = graycomatrix(gray_image, distances=distances, angles=angles, levels=256, symmetric=True, normed=True)
+    # GLCM properties computed
+    contrast = graycoprops(glcm, prop='contrast')
+    dissimilarity = graycoprops(glcm, prop='dissimilarity')
+    homogeneity = graycoprops(glcm, prop='homogeneity')
+    energy = graycoprops(glcm, prop='energy')
+    correlation = graycoprops(glcm, prop='correlation')
+    metrics = (dissimilarity,)
+    return metrics
+
 
 if __name__ == "__main__":
   """ _description_
