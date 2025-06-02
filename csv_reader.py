@@ -7,9 +7,14 @@ from tqdm import tqdm
 """import matplotlib
 matplotlib.use('TkAgg')  # or try 'Qt5Agg' if installed"""
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+
 # Data handlings
 import pandas as pd
 import os
+
+#importing functions from metrics
+from metrics import *
 
 #Preventing the Connection reset by peer
 from requests.adapters import HTTPAdapter
@@ -23,6 +28,7 @@ session.mount('https://', adapter)
 
 
 def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_link"):
+  
   """
   _summary_
 
@@ -59,8 +65,8 @@ def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_lin
         continue
       
       try:
-        resp = requests.get(img_url, stream=True)
-        
+        #resp = requests.get(img_url, stream=True)
+        resp = session.get(img_url, stream=True)
         #extracting img name
         filename = os.path.join(folder_name, os.path.basename(img_url))
         
@@ -86,24 +92,20 @@ def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_lin
         
 
 
-def prefix_extracter(url):
+def id_extracter(url):
   """_summary_
 
   Args:
       url (String): url link for the image we wish to download
 
   Returns:
-      String: returns the prefix associated to a specific image
+      String: returns the id associated to a specific image
   """
-   
-  filename = url.split("/")[-1] # splits at last /
-#    prefix = filename.split("_")[0] + "_" + filename.split("_")[-1].split(".")[0] #only take first half
-  prefix = filename.split(".")[0]+"."+filename.split(".")[1]
-  return prefix
+  
+  filename = os.path.basename(url)
+  img_id = filename.split("_")[0] + "_" + filename.split("_")[-1].split(".")[0] # creates string representing the id
+  return img_id
 
-"""
-noo as in: n02009912_5558.JPEG is the original while  n02009912_5558.JPEG.gaussian_noise_932.png is the altered
-"""
 
 #reader for any csv
 def csv_reader(csv_path, chosen_label):
@@ -120,8 +122,7 @@ def csv_reader(csv_path, chosen_label):
   df = pd.read_csv(csv_path)
 
   #new column for image ids
-  df['img_prefix'] = df['image_link'].apply(prefix_extracter)
-  
+  df['img_prefix'] = df['image_link'].apply(id_extracter)
   
 
   #Image Pairs:
@@ -173,6 +174,7 @@ def csv_reader(csv_path, chosen_label):
   return pairs
 
 
+
 #displays image pair at specific index, with label
 def display_img(index, myPairs):
 
@@ -202,6 +204,7 @@ def display_img(index, myPairs):
   
       #access downloaded images via path:
       try:
+        
         img1 = Image.open(img1_path)
         img2 = Image.open(img2_path)
       except Exception as e:
@@ -223,7 +226,6 @@ def display_img(index, myPairs):
       fig.suptitle(f"Validity: {pair_at_index['label']}", fontsize=16)
       plt.tight_layout()
       #plt.show(block=True)
-
       output_file = f"display_pair_{index}.png"
       plt.savefig(output_file)
       plt.close()
@@ -236,8 +238,62 @@ def display_img(index, myPairs):
       return
   
 
-  
+def dataset_split(percent, myPairs):
 
+    """
+      _summary_
+        Args:
+            percent (float): % of the original dataset (in decimal) that we will allocate to the test set
+            myPairs (list): image pairs generated from the image dataset
+
+        Returns: 
+            List: returns the training and testing dataset
+    """
+    ds_train, ds_test = train_test_split(
+      myPairs,
+      test_size = percent, 
+      random_state= 42
+    )
+    print("Training data set: ", len( ds_train)," pairs")
+    print("Testing data set: ", len( ds_test), " pairs")
+
+    return ds_train, ds_test
+
+ 
+def compute_metrics_on_dataset(training_dataset): #is this how you train it?
+  
+  """
+  _summary_
+
+  Args:
+    training_dataset (list): dataset with image pairs made for training
+
+  Returns: 
+    Matrix: returns the matrix containing the computed metrics for all the image pairs
+  """
+  
+  computed_metrics = []
+
+  for pair in training_dataset:
+
+    imgA_path = os.path.join("csv_images", pair['img1'])
+    imgB_path = os.path.join("csv_images", pair['img2'])
+
+    """imgA_path = pair['img1'] 
+    imgB_path = pair['img2']"""
+
+    imgA = Image.open(imgA_path)
+    imgB = Image.open(imgB_path)
+    numpy_arrayA = np.array(imgA)
+    numpy_arrayB = np.array(imgB)
+    if numpy_arrayA.shape != numpy_arrayB.shape:
+      print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
+      continue
+    pair_metrics = computeMetrics(numpy_arrayA, numpy_arrayB)
+    computed_metrics.append(pair_metrics)
+  
+  return computed_metrics
+    
 
 if __name__ == '__main__':
 
@@ -246,10 +302,17 @@ if __name__ == '__main__':
   chosen_label = "car"
   folder_name = "csv_images"
   img_url_col = "image_link"
+  percent = 0.2
+
   download_img(csv_file_path, folder_name, img_url_col)
   
   myPairs = csv_reader(csv_file_path, chosen_label)
   
+  train_dataset, test_dataset = dataset_split(percent, myPairs)
+  computed_metrics = compute_metrics_on_dataset(train_dataset)
+  print("Computed metrics for all pairs: ")
+  print(computed_metrics)
+
   while True:
         try:
             index = int(input("\nEnter index to display image pair (or -1 to exit): "))
@@ -258,7 +321,7 @@ if __name__ == '__main__':
             display_img(index, myPairs)
         except ValueError:
             print("Please enter a valid integer.")
-
+  
 
 
 
