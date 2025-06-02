@@ -61,6 +61,13 @@ def computeMetrics(img_A, img_B):
   #resizing our images:
   img_A_new = cv2.resize(img_A,input_shape[:2]) #assuming (32,32) is the resolution we want
   img_B_new = cv2.resize(img_B,input_shape[:2])
+  # Check if images loaded successfully
+  if img_A_new is None or img_B_new is None:
+    print("Error: One or both images could not be loaded. Check paths.")
+    # Handle the error, maybe exit or raise an exception
+    return
+  # Check if images loaded successfully
+  
 
 #CS
   features = model = VGG16(include_top=False, input_shape =input_shape)
@@ -89,6 +96,8 @@ def computeMetrics(img_A, img_B):
   #converts to grayscale
   g_A = cv2.cvtColor(img_A_new, cv2.COLOR_BGR2GRAY)
   g_B = cv2.cvtColor(img_B_new, cv2.COLOR_BGR2GRAY)
+
+
   #calculates intensity (in grayscale) of pixel to compare, puts it into a 1D array
   hist_A = cv2.calcHist([g_A], [0], None, [256], [0,256])[:, 0] + 1e-10 #last part added to avoid division by 0 issues.
   hist_B = cv2.calcHist([g_B], [0], None, [256], [0,256])[:, 0] + 1e-10
@@ -110,10 +119,28 @@ def computeMetrics(img_A, img_B):
 #psnr
   psnr_result = cv2.PSNR(img_A_new, img_B_new)
 
-#ssim
-  img_A_float = img_as_float(img_A_new)
-  img_B_float = img_as_float(img_B_new)
-  ssim_result = structural_similarity(img_A_float, img_B_float, data_range=img_B_float.max()-img_B_float.min())
+#ssim 
+
+  g_A_float = img_as_float(g_A)
+  g_B_float = img_as_float(g_B)
+
+  # For grayscale images
+  ssim_result = structural_similarity( g_A_float, g_B_float, data_range=1.0)
+
+  #for coloured images
+  ssim_result = structural_similarity( g_A_float, g_B_float, data_range=1.0)
+  """
+  #for coloured images
+
+  rgb_A = cv2.cvtColor(img_A_new, cv2.COLOR_BGR2RGB)
+  rgb_B = cv2.cvtColor(img_B_new, cv2.COLOR_BGR2RGB)
+  rgb_A_float = img_as_float(rgb_A)
+  rgb_B_float = img_as_float(rgb_B)
+  ssim_result = structural_similarity(rgb_A_float, rgb_B_float, data_range=1.0, channel_axis=-1)
+  #where last axis is the colours channel
+
+  """
+
 
 #sss
   weights = FCN_ResNet50_Weights.DEFAULT
@@ -137,7 +164,7 @@ def computeMetrics(img_A, img_B):
   sss_result = np.mean((mask_A - mask_B) ** 2)
 
 #tsi
-  angles = [0] #can be more
+  angles = [0] #can be more, but might need to average them all
   distances = [5] #can be more
 
   #assuming that distances = [5] (5px apart) and angles = [0] (horizontal to each other)
@@ -152,7 +179,6 @@ def computeMetrics(img_A, img_B):
 #wd
   wd_result = wasserstein_distance(g_A.flatten(), g_B.flatten())
 
-#no vif => only gotten from a csv file.
 
   metrics = np.array([cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, tsi_result, wd_result])
   return metrics
