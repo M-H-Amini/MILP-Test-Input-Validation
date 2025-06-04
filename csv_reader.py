@@ -4,8 +4,6 @@ from PIL import Image
 import requests
 from io import BytesIO
 from tqdm import tqdm
-"""import matplotlib
-matplotlib.use('TkAgg')  # or try 'Qt5Agg' if installed"""
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
@@ -27,6 +25,7 @@ adapter = HTTPAdapter(max_retries=retries)
 session.mount('https://', adapter)
 
 
+##  TODO:  Use tqdm to show download progress in a single line instead of printing many lines
 def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_link"):
   
   """
@@ -91,7 +90,7 @@ def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_lin
     print(f"An error occurred while reading the CSV: {e}")
         
 
-
+##  TODO:  Instead of _summary_, please provide a more descriptive docstring saying what is an id and how it is extracted
 def id_extracter(url):
   """_summary_
 
@@ -260,7 +259,7 @@ def dataset_split(percent, myPairs):
     return ds_train, ds_test
 
  
-def compute_metrics_on_dataset(training_dataset): #is this how you train it?
+def compute_metrics_on_dataset(training_dataset, ds_folder='dataset'): #is this how you train it?
   
   """
   _summary_
@@ -276,8 +275,8 @@ def compute_metrics_on_dataset(training_dataset): #is this how you train it?
 
   for pair in training_dataset:
 
-    imgA_path = os.path.join("csv_images", pair['img1'])
-    imgB_path = os.path.join("csv_images", pair['img2'])
+    imgA_path = os.path.join(ds_folder, pair['img1'])
+    imgB_path = os.path.join(ds_folder, pair['img2'])
 
     """imgA_path = pair['img1'] 
     imgB_path = pair['img2']"""
@@ -300,7 +299,7 @@ if __name__ == '__main__':
   #You can use a different csv file. This is just a sample
   csv_file_path = "imagenet_experiment_results.csv"
   chosen_label = "car"
-  folder_name = "csv_images"
+  folder_name = "dataset"
   img_url_col = "image_link"
   percent = 0.2
 
