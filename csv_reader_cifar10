@@ -12,7 +12,7 @@ import pandas as pd
 import os
 
 #importing functions from metrics
-from computeMetrics import *
+#from computeMetrics import *
 
 #For working with tuples
 from collections import Counter
@@ -217,8 +217,8 @@ def display_img(index, myPairs):
   if 0 <= index < biggest:
       
       pair_at_index = myPairs[index] 
-      img1_path = os.path.join("csv_images", pair_at_index['img1'])
-      img2_path = os.path.join("csv_images", pair_at_index['img2'])
+      img1_path = os.path.join("cifar_10_images", pair_at_index['img1'])
+      img2_path = os.path.join("cifar_10_images", pair_at_index['img2'])
       #label = f"validity: {pair_at_index['label']}"
      
       if not os.path.exists(img1_path) or not os.path.exists(img2_path):
@@ -333,7 +333,7 @@ if __name__ == '__main__':
   download_img(csv_file_path, folder_name, img_url_col)
   
   myPairs, myChecks = csv_reader(csv_file_path)
-  
+     
   train_dataset, test_dataset = dataset_split(percent, myPairs)
   """computed_metrics = compute_metrics_on_dataset(train_dataset)
   print("Computed metrics for all pairs: ")
