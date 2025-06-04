@@ -14,6 +14,9 @@ import os
 #importing functions from metrics
 from computeMetrics import *
 
+#For working with tuples
+from collections import Counter
+
 #Preventing the Connection reset by peer
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -286,7 +289,7 @@ def dataset_split(percent, myPairs):
     return ds_train, ds_test
 
  
-def compute_metrics_on_dataset(training_dataset, ds_folder='dataset'): #is this how you train it?
+def compute_metrics_on_dataset(training_dataset, ds_folder='csv_images'): #is this how you train it?
   
   """
   _summary_
@@ -319,16 +322,19 @@ def compute_metrics_on_dataset(training_dataset, ds_folder='dataset'): #is this 
     computed_metrics.append(pair_metrics)
   
   return computed_metrics
-    
+
+
+def dict_to_tuple(pair):
+  return tuple(sorted(pair.items()))
 
 if __name__ == '__main__':
 
   #You can use a different csv file. This is just a sample
-  csv_file_path = "imagenet_experiment_results.csv"
-  folder_name = "dataset"
+  csv_file_path = "imagenet_experiment_results.csv" 
+  folder_name = "csv_images"
   img_url_col = "image_link"
   percent = 0.2
-
+  
   download_img(csv_file_path, folder_name, img_url_col)
   
   myPairs, myChecks = csv_reader(csv_file_path)
@@ -337,6 +343,32 @@ if __name__ == '__main__':
   """computed_metrics = compute_metrics_on_dataset(train_dataset)
   print("Computed metrics for all pairs: ")
   print(computed_metrics)"""
+
+
+
+  totalValid = 0
+  totalInvalid = 0
+  for i in myPairs:
+    if i['label'] == 1:
+      totalValid+=1
+    else:
+      totalInvalid+=1
+  print("Total valid pairs: ", totalValid)
+  print("Total invalid pairs", totalInvalid)
+  
+  # check for duplicates
+  totalDuplicates = 0
+
+  #converts pairs, that were dictionarries, to tuples.  
+  myTuples = [dict_to_tuple(pair) for pair in myPairs]
+
+  pair_counts = Counter(myTuples)
+  for pair_tuple, count in pair_counts.items():
+    if count > 1:
+      totalDuplicates += (count-1)
+  
+  print("Total number of duplicates: ", totalDuplicates)
+
 
   while True:
         try:
@@ -348,5 +380,6 @@ if __name__ == '__main__':
         except ValueError:
             print("Please enter a valid integer.")
   
+
 
 
