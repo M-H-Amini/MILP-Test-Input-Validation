@@ -12,7 +12,7 @@ import pandas as pd
 import os
 
 #importing functions from metrics
-from metrics import *
+from computeMetrics import *
 
 #Preventing the Connection reset by peer
 from requests.adapters import HTTPAdapter
@@ -56,11 +56,11 @@ def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_lin
       return
     
     #download img from each row
-    for index, row in df.iterrows():
+    for index, row in tqdm(df.iterrows(), total=len(df), desc = "Downloading Images: "):
       
       img_url = row[img_url_col]
       if pd.isna(img_url): #skip url if is NaN (Not a Number)
-        print("Skipping since no URL was found")
+        #("Skipping since no URL was found")
         continue
       
       try:
@@ -74,7 +74,8 @@ def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_lin
 
         with open(filename, 'wb') as out_file:
           out_file.write(resp.content)
-        print(f"Download: {img_url} to {filename}")
+        #print(f"Download: {img_url} to {filename}")
+        #tqdm.write(f"Download: {img_url} to {filename}")
 
       except requests.exceptions.RequestException as e:
         print(f"Error downloading {img_url}: {e}")
@@ -92,22 +93,40 @@ def download_img(csv_file_path, folder_name="csv_images", img_url_col="image_lin
 
 ##  TODO:  Instead of _summary_, please provide a more descriptive docstring saying what is an id and how it is extracted
 def id_extracter(url):
-  """_summary_
 
-  Args:
-      url (String): url link for the image we wish to download
+  """
+  Here, an 'image_id' refers to the id from the original original. We will need to exract it
+  from the original image's url to pair the original images only with their synthesized counterparts.
 
-  Returns:
-      String: returns the id associated to a specific image
+  For example, given this original image url: https://pilotexp.s3.ca-central-1.amazonaws.com/IMG_ORIGINAL/defocus_blur/n03095699_3680.JPEG
+  we would only take the basename of the link "n03095699_3680.JPEG", and use the .split function for "_".
+  This will will give the list ["n03095699", "3680.JPEG"]. 
+
+  In order to get the image_id, we will concatenate the items at index 0 and 1.
+  The reason why we don't just use the item at the last index is because synthesized images, unlike original ones, 
+  have more than two items in their lists after the .split, so accessing the last item will result in an incorrect id. 
+  ex: list after .split on synthesized image's basename = ['n03127747', '4845.JPEG.gaussian', 'noise', '816.png']
+    => the correct image_id = "n03127747_4845", but if we concatenate only the first and last items, we would get image_id = "n03127747_816"
+  
+  Since we desire to get the id "n03095699_3680", we'll concatenate those first two items,
+  and get rid of the of the .JPEG" from the second one by using the .split function again,
+  only this time for the ".". This will generate the list ["3680", "JPEG"] but we'll only use the first value.
+
+  Thus:
+  filename = os.path.basename(url) # extracting the basename
+  image_id = filename.split("_")[0] + "_" + filename.split("_")[1].split(".")[0] # AKA "n03095699" + "_" + "3680"
+    
+    => the image_id would be "n03095699_3680".
+    
   """
   
   filename = os.path.basename(url)
-  img_id = filename.split("_")[0] + "_" + filename.split("_")[-1].split(".")[0] # creates string representing the id
+  img_id = filename.split("_")[0] + "_" + filename.split("_")[1].split(".")[0] # creates string representing the id
   return img_id
 
 
 #reader for any csv
-def csv_reader(csv_path, chosen_label):
+def csv_reader(csv_path):
 
   """
   Args:
@@ -118,14 +137,15 @@ def csv_reader(csv_path, chosen_label):
       list: returns list containing groups consisting of image pairs and their validity label
   """
   pairs = []
+  pair_transforms = []
   df = pd.read_csv(csv_path)
 
   #new column for image ids
-  df['img_prefix'] = df['image_link'].apply(id_extracter)
+  df['img_id'] = df['image_link'].apply(id_extracter)
   
 
   #Image Pairs:
-  for prefix, group in tqdm(df.groupby('img_prefix'), desc="Processing image pairs"):
+  for img_id, group in tqdm(df.groupby('img_id'), desc="Processing image pairs"):
     origin = group[group["transformation"] == "original"]
     if len(origin) == 0:
         # Skip if no original images
@@ -133,44 +153,51 @@ def csv_reader(csv_path, chosen_label):
 
     #get the og img and download it
     origin_row = origin.iloc[0]
-    #img1 = download_img(origin_row["image_link"])
     img1 = origin_row["image_link"]
+    transformation1 = origin_row["transformation"]
+
     if img1 is None:
         continue
     # Pair with each transformed image
     for _, row in group.iterrows():
-        if row["transformation"] == "original":
+        if row["transformation"] != "original":
             # skip original => we already have it
-            continue  
-        
-        #img2 = download_img(row["image_link"])
-        img2 = row["image_link"]
+            img2 = row["image_link"]
+            transformation2 = row["transformation"]
+            
+        else:
+          continue  
+
         if img2 is None:
           continue
 
-        validLabel = row["ground_truth"]
-        if validLabel==chosen_label:
+        validLabel1 = row["ground_truth"]
+        validLabel2 = row["human_label"]
+
+        validLabel = 0
+        if validLabel1==validLabel2:
           validLabel = 1
         else:
            validLabel = 0
 
-
         filename1 = os.path.basename(img1)
         filename2 = os.path.basename(img2)
         item = {'img1':filename1, 'img2':filename2, 'label':validLabel}
+        check = {'img1':transformation1, 'img2':transformation2}
         pairs.append(item)
+        pair_transforms.append(check)
         #item = (img1, img2, label)
   
 
   # Debugging
-  print("Sample of image pairs:")
+  """print("Sample of image pairs:")
   for i, pair in enumerate(pairs[:3]):
     print(f"Pair {i}: label={pair['label']}")
     print(f"  Original: {pair['img1']}")
     print(f"  Synthesized: {pair['img2']}")
-
+"""
   print(f"Loaded {len(pairs)} image pairs.")
-  return pairs
+  return pairs,  pair_transforms #change later => for debugging
 
 
 
@@ -298,19 +325,18 @@ if __name__ == '__main__':
 
   #You can use a different csv file. This is just a sample
   csv_file_path = "imagenet_experiment_results.csv"
-  chosen_label = "car"
   folder_name = "dataset"
   img_url_col = "image_link"
   percent = 0.2
 
   download_img(csv_file_path, folder_name, img_url_col)
   
-  myPairs = csv_reader(csv_file_path, chosen_label)
+  myPairs, myChecks = csv_reader(csv_file_path)
   
   train_dataset, test_dataset = dataset_split(percent, myPairs)
-  computed_metrics = compute_metrics_on_dataset(train_dataset)
+  """computed_metrics = compute_metrics_on_dataset(train_dataset)
   print("Computed metrics for all pairs: ")
-  print(computed_metrics)
+  print(computed_metrics)"""
 
   while True:
         try:
@@ -318,9 +344,9 @@ if __name__ == '__main__':
             if index == -1:
                 break
             display_img(index, myPairs)
+            print(myChecks[index])
         except ValueError:
             print("Please enter a valid integer.")
   
-
 
 
