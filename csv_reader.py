@@ -11,8 +11,10 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
 
-#importing functions from metrics
+#importing functions from other files
 from computeMetrics import *
+from training_classifiers import *
+
 
 #For working with tuples
 from collections import Counter
@@ -289,7 +291,7 @@ def dataset_split(percent, myPairs):
     return ds_train, ds_test
 
  
-def compute_metrics_on_dataset(training_dataset, ds_folder='csv_images'): #is this how you train it?
+def compute_metrics_on_dataset(dataset, ds_folder='csv_images'): #is this how you train it?
   
   """
   _summary_
@@ -301,9 +303,10 @@ def compute_metrics_on_dataset(training_dataset, ds_folder='csv_images'): #is th
     Matrix: returns the matrix containing the computed metrics for all the image pairs
   """
   
-  computed_metrics = []
+  X = []
+  y = []
 
-  for pair in training_dataset:
+  for pair in dataset:
 
     imgA_path = os.path.join(ds_folder, pair['img1'])
     imgB_path = os.path.join(ds_folder, pair['img2'])
@@ -319,10 +322,13 @@ def compute_metrics_on_dataset(training_dataset, ds_folder='csv_images'): #is th
       print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
       continue
     pair_metrics = computeMetrics(numpy_arrayA, numpy_arrayB)
-    computed_metrics.append(pair_metrics)
+    X.append(pair_metrics)
+    y.append(pair['label'])
   
-  return computed_metrics
+  X = np.array(X)
+  y = np.array(y)
 
+  return X,y
 
 def dict_to_tuple(pair):
   return tuple(sorted(pair.items()))
@@ -343,6 +349,7 @@ if __name__ == '__main__':
   """computed_metrics = compute_metrics_on_dataset(train_dataset)
   print("Computed metrics for all pairs: ")
   print(computed_metrics)"""
+
 
 
 
