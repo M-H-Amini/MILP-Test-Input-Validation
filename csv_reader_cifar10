@@ -11,12 +11,12 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
 
-#importing functions from other files
+#importing functions from metrics
 from computeMetrics import *
-from training_classifiers import *
 
 #For working with tuples
 from collections import Counter
+
 
 #Preventing the Connection reset by peer
 from requests.adapters import HTTPAdapter
@@ -199,6 +199,47 @@ def csv_reader(csv_path):
   return pairs,  pair_transforms #change later => for debugging
 
 
+ 
+def compute_metrics_on_dataset(dataset, ds_folder='cifar_10_images'): #is this how you train it?
+  
+  """
+  _summary_
+
+  Args:
+    training_dataset (list): dataset with image pairs made for training
+
+  Returns: 
+    Matrix: returns the matrix containing the computed metrics for all the image pairs
+  """
+  
+  X = []
+  y = []
+
+  for pair in dataset:
+
+    imgA_path = os.path.join(ds_folder, pair['img1'])
+    imgB_path = os.path.join(ds_folder, pair['img2'])
+
+    """imgA_path = pair['img1'] 
+    imgB_path = pair['img2']"""
+
+    imgA = Image.open(imgA_path)
+    imgB = Image.open(imgB_path)
+    numpy_arrayA = np.array(imgA)
+    numpy_arrayB = np.array(imgB)
+    if numpy_arrayA.shape != numpy_arrayB.shape:
+      print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
+      continue
+    pair_metrics = computeMetrics(numpy_arrayA, numpy_arrayB)
+    X.append(pair_metrics)
+    y.append(pair['label'])
+  
+  X = np.array(X)
+  y = np.array(y)
+
+  return X,y
+
+
 
 #displays image pair at specific index, with label
 def display_img(index, myPairs):
@@ -218,8 +259,8 @@ def display_img(index, myPairs):
   if 0 <= index < biggest:
       
       pair_at_index = myPairs[index] 
-      img1_path = os.path.join("csv_images", pair_at_index['img1'])
-      img2_path = os.path.join("csv_images", pair_at_index['img2'])
+      img1_path = os.path.join("cifar_10_images", pair_at_index['img1'])
+      img2_path = os.path.join("cifar_10_images", pair_at_index['img2'])
       #label = f"validity: {pair_at_index['label']}"
      
       if not os.path.exists(img1_path) or not os.path.exists(img2_path):
@@ -285,50 +326,10 @@ def dataset_split(percent, myPairs):
     return ds_train, ds_test
 
 
-
-
-def compute_metrics_on_dataset(dataset, ds_folder='csv_images'): #is this how you train it?
-  
-  """
-  _summary_
-
-  Args:
-    training_dataset (list): dataset with image pairs made for training
-
-  Returns: 
-    Matrix: returns the matrix containing the computed metrics for all the image pairs
-  """
-  
-  X = []
-  y = []
-
-  for pair in dataset:
-
-    imgA_path = os.path.join(ds_folder, pair['img1'])
-    imgB_path = os.path.join(ds_folder, pair['img2'])
-
-    """imgA_path = pair['img1'] 
-    imgB_path = pair['img2']"""
-
-    imgA = Image.open(imgA_path)
-    imgB = Image.open(imgB_path)
-    numpy_arrayA = np.array(imgA)
-    numpy_arrayB = np.array(imgB)
-    if numpy_arrayA.shape != numpy_arrayB.shape:
-      print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
-      continue
-    pair_metrics = computeMetrics(numpy_arrayA, numpy_arrayB)
-    X.append(pair_metrics)
-    y.append(pair['label'])
-  
-  X = np.array(X)
-  y = np.array(y)
-
-  return X,y
-
-
 def dict_to_tuple(pair):
   return tuple(sorted(pair.items()))
+
+
 
 if __name__ == '__main__':
 
@@ -341,13 +342,8 @@ if __name__ == '__main__':
   download_img(csv_file_path, folder_name, img_url_col)
   
   myPairs, myChecks = csv_reader(csv_file_path)
-  
+     
   train_dataset, test_dataset = dataset_split(percent, myPairs)
-  """computed_metrics = compute_metrics_on_dataset(train_dataset)
-  print("Computed metrics for all pairs: ")
-  print(computed_metrics)"""
-
-
 
   totalValid = 0
   totalInvalid = 0
@@ -382,7 +378,3 @@ if __name__ == '__main__':
             print(myChecks[index])
         except ValueError:
             print("Please enter a valid integer.")
-  
-
-
-
