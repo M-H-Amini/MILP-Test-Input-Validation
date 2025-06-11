@@ -74,25 +74,58 @@ def classifier_modeler(int_choice, ds_train, ds_test): #classifier_choice
         #train SVM
         # kernels: linear, polynomial, rbf
         
-        kernel_choice = input("Specify your desired kernel: ")
+      while True:
+        try:
+            kernel_choice = int(input("Specify your desired kernel: 0 - RBF, 1 - Linear, 2 - Poly "))
         
-        if kernel_choice == 0:
+            if kernel_choice == 0:
             # rbf:
-            svm_rbf = SVC(kernel="rbf", gamma=0.5, C=1.0)
-            svm_rbf.fit(X_train, y_train)
-            predictions_train_y = model.predict(X_train)
-            print("---Logisitic Regression---")
+
+            #Train:
+                svm_rbf = SVC(kernel="rbf", gamma=0.5, C=1.0)
+                svm_rbf.fit(X_train, y_train)
+                predictions_train_y = model.predict(X_train)
+             # Test Set       
+                predictions_test_y = model.predict(X_test)
+                print("---SVM with RBF Kernel---")
+        
+            elif kernel_choice == 1:
+            # linear
+
+            #Train:
+                svm_rbf = SVC(kernel="linear", gamma=0.5, C=1.0)
+                svm_rbf.fit(X_train, y_train)
+                predictions_train_y = model.predict(X_train)
+             # Test Set       
+                predictions_test_y = model.predict(X_test)
+                print("---SVM with Linear Regression Kernel---")
+            
+            elif kernel_choice == 2:
+            # poly
+
+             #Train:
+                svm_rbf = SVC(kernel="poly", gamma=0.5, C=1.0)
+                svm_rbf.fit(X_train, y_train)
+                predictions_train_y = model.predict(X_train)
+             # Test Set       
+                predictions_test_y = model.predict(X_test)
+                print("---SVM with Polynomial Kernel---")
+
             print("Training Set:")
             print("Accuracy:", accuracy_score(y_train, predictions_train_y))
             print("Precision:", precision_score(y_train, predictions_train_y, average='binary'))  
             print("Recall:", recall_score(y_train, predictions_train_y, average='binary'))
             print("F1 Score:", f1_score(y_train, predictions_train_y, average='binary'))
 
+            print("Testing Set:")
+            print("Accuracy:", accuracy_score(y_test, predictions_test_y))
+            print("Precision:", precision_score(y_test,predictions_test_y, average='binary'))  
+            print("Recall:", recall_score(y_test, predictions_test_y, average='binary'))
+            print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary'))
+        except ValueError:
+            print("Please input an integer value!")
 
-
-
-
-        pass
+        
     elif int_choice==1:
 
         #train Logisitic Regression
