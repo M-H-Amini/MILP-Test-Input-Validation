@@ -18,7 +18,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 # Import functions from other files
 from csv_reader import *
-from csv_reader_cifar10 import *
+#from csv_reader_cifar10 import *
 
 #SVM with kernel (try for all three)
 from sklearn import svm
@@ -84,46 +84,36 @@ def classifier_modeler(int_choice, ds_train, ds_test): #classifier_choice
             #Train:
                 svm_rbf = SVC(kernel="rbf", gamma=0.5, C=1.0)
                 svm_rbf.fit(X_train, y_train)
-                predictions_train_y = model.predict(X_train)
-             # Test Set       
-                predictions_test_y = model.predict(X_test)
+               
                 print("---SVM with RBF Kernel---")
+                prediction_report(svm_rbf, X_train, y_train,X_test, y_test)
+
         
             elif kernel_choice == 1:
             # linear
 
             #Train:
-                svm_rbf = SVC(kernel="linear", gamma=0.5, C=1.0)
-                svm_rbf.fit(X_train, y_train)
-                predictions_train_y = model.predict(X_train)
-             # Test Set       
-                predictions_test_y = model.predict(X_test)
+                svm_linear = SVC(kernel="linear", C=1.0)
+                svm_linear.fit(X_train, y_train)
+                
                 print("---SVM with Linear Regression Kernel---")
-            
+                prediction_report(svm_linear, X_train, y_train,X_test, y_test)
+
             elif kernel_choice == 2:
             # poly
 
              #Train:
-                svm_rbf = SVC(kernel="poly", gamma=0.5, C=1.0)
-                svm_rbf.fit(X_train, y_train)
-                predictions_train_y = model.predict(X_train)
-             # Test Set       
-                predictions_test_y = model.predict(X_test)
+                svm_poly = SVC(kernel="poly", gamma=0.5, C=1.0)
+                svm_poly.fit(X_train, y_train)
+                
                 print("---SVM with Polynomial Kernel---")
+                prediction_report(svm_poly, X_train, y_train,X_test, y_test)
 
-            print("Training Set:")
-            print("Accuracy:", accuracy_score(y_train, predictions_train_y))
-            print("Precision:", precision_score(y_train, predictions_train_y, average='binary'))  
-            print("Recall:", recall_score(y_train, predictions_train_y, average='binary'))
-            print("F1 Score:", f1_score(y_train, predictions_train_y, average='binary'))
-
-            print("Testing Set:")
-            print("Accuracy:", accuracy_score(y_test, predictions_test_y))
-            print("Precision:", precision_score(y_test,predictions_test_y, average='binary'))  
-            print("Recall:", recall_score(y_test, predictions_test_y, average='binary'))
-            print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary'))
+            break
+        
         except ValueError:
             print("Please input an integer value!")
+            
 
         
     elif int_choice==1:
@@ -132,25 +122,8 @@ def classifier_modeler(int_choice, ds_train, ds_test): #classifier_choice
         model = LogisticRegression(random_state=16)
         model.fit(X_train, y_train)
 
-        # Training Set         
-
-        predictions_train_y = model.predict(X_train)
         print("---Logisitic Regression---")
-        print("Training Set:")
-        print("Accuracy:", accuracy_score(y_train, predictions_train_y))
-        print("Precision:", precision_score(y_train, predictions_train_y, average='binary'))  
-        print("Recall:", recall_score(y_train, predictions_train_y, average='binary'))
-        print("F1 Score:", f1_score(y_train, predictions_train_y, average='binary'))
-        
-        # Test Set       
-
-        predictions_test_y = model.predict(X_test)
-        print("Testing Set:")
-        print("Accuracy:", accuracy_score(y_test, predictions_test_y))
-        print("Precision:", precision_score(y_test,predictions_test_y, average='binary'))  
-        print("Recall:", recall_score(y_test, predictions_test_y, average='binary'))
-        print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary'))
-
+        prediction_report(model, X_train, y_train,X_test, y_test)
 
 
     elif int_choice==2:
@@ -158,95 +131,77 @@ def classifier_modeler(int_choice, ds_train, ds_test): #classifier_choice
         #train Decision Tree
         model=DecisionTreeClassifier()
         model.fit(X_train,y_train)
-
-        # Training Set         
-
-        predictions_train_y=model.predict(X_train)
         
         print("---Decision Tree---")
-        print("Training Set:")
-        print("Accuracy:", accuracy_score(y_train, predictions_train_y))
-        print("Precision:", precision_score(y_train, predictions_train_y, average='binary'))  
-        print("Recall:", recall_score(y_train, predictions_train_y, average='binary'))
-        print("F1 Score:", f1_score(y_train, predictions_train_y, average='binary'))
-        
-        # Test Set       
-
-        predictions_test_y=model.predict(X_test)
-        print("Testing Set:")
-        print("Accuracy:", accuracy_score(y_test, predictions_test_y))
-        print("Precision:", precision_score(y_test,predictions_test_y, average='binary'))  
-        print("Recall:", recall_score(y_test, predictions_test_y, average='binary'))
-        print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary'))
+        prediction_report(model, X_train, y_train,X_test, y_test)
+       
 
     elif int_choice==3:
         #train Random Forest
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
         
-        # Training Set         
-        predictions_train_y=model.predict(X_train)
         print("---Random Forest---")
+        prediction_report(model, X_train, y_train,X_test, y_test)
+        
+    else: 
+        print("Invalid choice - Please choose one of the specified values!")
+
+
+def prediction_report(model, X_train, y_train,X_test, y_test):
+     # Training Set         
+        predictions_train_y=model.predict(X_train)
         print("Training Set:")
         print("Accuracy:", accuracy_score(y_train, predictions_train_y))
-        print("Precision:", precision_score(y_train, predictions_train_y, average='binary'))  
-        print("Recall:", recall_score(y_train, predictions_train_y, average='binary'))
-        print("F1 Score:", f1_score(y_train, predictions_train_y, average='binary'))
+        print("Precision:", precision_score(y_train, predictions_train_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))  
+        print("Recall:", recall_score(y_train, predictions_train_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
+        print("F1 Score:", f1_score(y_train, predictions_train_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
         
         # Test Set       
         predictions_test_y=model.predict(X_test)
         print("Testing Set:")
         print("Accuracy:", accuracy_score(y_test, predictions_test_y))
-        print("Precision:", precision_score(y_test,predictions_test_y, average='binary'))  
-        print("Recall:", recall_score(y_test, predictions_test_y, average='binary'))
-        print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary'))
-    else: 
-        print("Invalid choice")
-
-    
-
-'''
-music_d=pd.read_csv('music.csv')
-X=music_d.drop(columns=['genre'])
-y=music_d['genre']
+        print("Precision:", precision_score(y_test,predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))  
+        print("Recall:", recall_score(y_test, predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
+        print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
 
 
-model=DecisionTreeClassifier()
-model.fit(X,y)
-prediction=model.predict([[21,1],[22,0]])
-prediction
-'''
+if __name__ == '__main__':
 
-"""
- => CALL THIS IN THE CSV_READER FILE
-if __name__=='__main__':
+  #You can use a different csv file. This is just a sample
+  csv_file_path = "imagenet_experiment_results.csv" 
+  folder_name = "csv_images"
+  img_url_col = "image_link"
+  percent = 0.2
+  
+  download_img(csv_file_path, folder_name, img_url_col)
+  
+  myPairs, myChecks = csv_reader(csv_file_path)
+  
+  train_dataset, test_dataset = dataset_split(percent, myPairs)
+  '''while True:
+        try:
+            index = int(input("\nEnter index to display image pair (type -1 to exit): "))
+            if index == -1:
+                break
+            display_img(index, myPairs)
+        except ValueError:
+            print("Please enter a valid integer.")'''
 
     # specify what classifier you want
-    print("classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest")
-    while True:
-        try:
-            classifier_choice = int(input("Specify your choice of classifier:"))
-            if ((classifier_choice > 3) or (classifier_choice <0)):
-                print("Please use one of the given numbers")
+  print("classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest")
+  while True:
+        # try:
+            classifier_choice = int(input("Specify your choice of classifier (type -1 to exit):").strip())
+            if classifier_choice == -1:
+                break
+            elif classifier_choice == 0 or classifier_choice == 1 or classifier_choice == 2 or classifier_choice == 3 :
+                classifier_modeler(classifier_choice, train_dataset, test_dataset)
             else:
-                #call functtion that trains classifiers
-                pass
+                print("Please choose one of the specified values!")
 
-        except ValueError:
-            print("Please enter a valid integer.")
-        
-        
-       """ 
+        #except ValueError:
+         #   print("Please enter a valid integer.")
 
-"""
-#Report
-    # Precision
-    # Accuracy
-    # Recall
-    # FI-Score
-"""
 
-def classifier_report():
-    
-    
-    pass
+
