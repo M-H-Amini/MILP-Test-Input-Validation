@@ -224,15 +224,13 @@ def display_img(index, myPairs):
   if 0 <= index < biggest:
       
       pair_at_index = myPairs[index] 
-      img1_path = os.path.join("csv_images", pair_at_index['img1'])
-      img2_path = os.path.join("csv_images", pair_at_index['img2'])
+      img1_path = os.path.join("csv_images1", pair_at_index['img1'])
+      img2_path = os.path.join("csv_images1", pair_at_index['img2'])
       #label = f"validity: {pair_at_index['label']}"
-     
       if not os.path.exists(img1_path) or not os.path.exists(img2_path):
         print(f"Image file(s) not found:\n  - {img1_path}\n  - {img2_path}")
         return
       
-  
       #access downloaded images via path:
       try:
         
@@ -330,6 +328,8 @@ def compute_metrics_on_dataset(dataset, ds_folder='csv_images'): #is this how yo
 
   return X,y
 
+
+
 def dict_to_tuple(pair):
   return tuple(sorted(pair.items()))
 
@@ -349,8 +349,6 @@ if __name__ == '__main__':
   """computed_metrics = compute_metrics_on_dataset(train_dataset)
   print("Computed metrics for all pairs: ")
   print(computed_metrics)"""
-
-
 
 
   totalValid = 0
@@ -379,14 +377,10 @@ if __name__ == '__main__':
 
   while True:
         try:
-            index = int(input("\nEnter index to display image pair (or -1 to exit): "))
+            index = int(input("\nEnter index to display image pair (type -1 to exit): "))
             if index == -1:
                 break
             display_img(index, myPairs)
             print(myChecks[index])
         except ValueError:
             print("Please enter a valid integer.")
-  
-
-
-
