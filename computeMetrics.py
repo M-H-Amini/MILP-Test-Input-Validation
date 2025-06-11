@@ -13,6 +13,8 @@ from tqdm import tqdm
 from PIL import Image
 
 # Deep learning
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
 
@@ -121,15 +123,13 @@ def computeMetrics(img_A, img_B):
 
 #ssim 
 
-  g_A_float = img_as_float(g_A)
+  '''g_A_float = img_as_float(g_A)
   g_B_float = img_as_float(g_B)
 
   # For grayscale images
   ssim_result = structural_similarity( g_A_float, g_B_float, data_range=1.0)
+ '''
 
-  #for coloured images
-  ssim_result = structural_similarity( g_A_float, g_B_float, data_range=1.0)
-  """
   #for coloured images
 
   rgb_A = cv2.cvtColor(img_A_new, cv2.COLOR_BGR2RGB)
@@ -139,8 +139,6 @@ def computeMetrics(img_A, img_B):
   ssim_result = structural_similarity(rgb_A_float, rgb_B_float, data_range=1.0, channel_axis=-1)
   #where last axis is the colours channel
 
-  """
-
 
 #sss
   weights = FCN_ResNet50_Weights.DEFAULT
@@ -148,9 +146,20 @@ def computeMetrics(img_A, img_B):
   model.eval()
 
   #normalizes, resizes and converts images
-  tensor_A = weights.transforms()(read_image(img_A, mode=ImageReadMode.RGB)).unsqueeze(0)
+  '''tensor_A = weights.transforms()(read_image(img_A, mode=ImageReadMode.RGB)).unsqueeze(0)
   tensor_B = weights.transforms()(read_image(img_B, mode=ImageReadMode.RGB)).unsqueeze(0)
+'''
+  
+  #img_A_tensor = torch.from_numpy(img_A_new).permute(2, 0, 1).float() / 255.0
+  #img_B_tensor = torch.from_numpy(img_B_new).permute(2, 0, 1).float() / 255.0
+  
+  img_A_pil = Image.fromarray(img_A_new)
+  img_B_pil = Image.fromarray(img_B_new)
 
+  tensor_A = weights.transforms()(img_A_pil).unsqueeze(0)
+  tensor_B = weights.transforms()(img_B_pil).unsqueeze(0)
+  '''tensor_A = weights.transforms()(read_image(img_A_new, mode=ImageReadMode.RGB)).unsqueeze(0)
+  tensor_B = weights.transforms()(read_image(img_B_new, mode=ImageReadMode.RGB)).unsqueeze(0)'''
   #out_A = model(tensor_A)["out"].detach()
   #out_B = model(tensor_B)["out"].detach()
   
@@ -170,10 +179,20 @@ def computeMetrics(img_A, img_B):
   #assuming that distances = [5] (5px apart) and angles = [0] (horizontal to each other)
   glcm_A = compute_glcm_features(img_A_new, distances=distances, angles=angles) 
   glcm_B = compute_glcm_features(img_B_new, distances=distances, angles=angles) 
+  print((glcm_A))
 
-  glcm_contrast = abs(graycoprops(glcm_A, 'contrast')[0, 0] - graycoprops(glcm_B, 'contrast')[0, 0])
+  contr_A = glcm_A[0][0,0]
+  contr_B = glcm_A[0][0,0]
+
+  dissim_A = glcm_A[1][0,0]
+  dissim_B = glcm_A[1][0,0]
+
+  glcm_contrast = abs(contr_A-contr_B)
+  glcm_dissim = abs(dissim_A-dissim_B)
+
+  '''glcm_contrast = abs(graycoprops(glcm_A, 'contrast')[0, 0] - graycoprops(glcm_B, 'contrast')[0, 0])
   glcm_dissim = abs(graycoprops(glcm_A, 'dissimilarity')[0, 0] - graycoprops(glcm_B, 'dissimilarity')[0, 0])
-
+'''
   tsi_result = (glcm_contrast + glcm_dissim)/2
 
 #wd
@@ -198,10 +217,10 @@ def compute_glcm_features(image, distances, angles):
     homogeneity = graycoprops(glcm, prop='homogeneity')
     energy = graycoprops(glcm, prop='energy')
     correlation = graycoprops(glcm, prop='correlation')
-    metrics = (dissimilarity,)
+    metrics = (contrast, dissimilarity)
     return metrics
 
-
+'''
 if __name__ == "__main__":
   """ _description_
   
@@ -243,7 +262,7 @@ if __name__ == "__main__":
         +", SSIM: " + str(metrics[7])
         +", SSS: " + str(metrics[8])
         +", TSI: " + str(metrics[9])
-        +", WD: " + str(metrics[10]))
+        +", WD: " + str(metrics[10]))'''
 
 
 """
