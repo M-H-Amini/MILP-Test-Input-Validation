@@ -224,8 +224,8 @@ def display_img(index, myPairs):
   if 0 <= index < biggest:
       
       pair_at_index = myPairs[index] 
-      img1_path = os.path.join("csv_images1", pair_at_index['img1'])
-      img2_path = os.path.join("csv_images1", pair_at_index['img2'])
+      img1_path = os.path.join("csv_images", pair_at_index['img1'])
+      img2_path = os.path.join("csv_images", pair_at_index['img2'])
       #label = f"validity: {pair_at_index['label']}"
       if not os.path.exists(img1_path) or not os.path.exists(img2_path):
         print(f"Image file(s) not found:\n  - {img1_path}\n  - {img2_path}")
