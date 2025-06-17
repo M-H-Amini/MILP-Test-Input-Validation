@@ -7,8 +7,8 @@ from sklearn import tree
 #Random Forest
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, ConfusionMatrixDisplay
-from sklearn.model_selection import RandomizedSearchCV, train_test_split
-from scipy.stats import randint
+#from sklearn.model_selection import RandomizedSearchCV, train_test_split
+#from scipy.stats import randint
 
 #Logistic Regression
 from sklearn.linear_model import LogisticRegression
@@ -21,131 +21,87 @@ from csv_reader import *
 #from csv_reader_cifar10 import *
 
 #SVM with kernel (try for all three)
-from sklearn import svm
-from sklearn import datasets
+#from sklearn import svm
+#from sklearn import datasets
 from sklearn.svm import SVC
 
 #Predictions:
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-
-'''
-# Load the Iris dataset
-iris = datasets.load_iris()
-# We only take the first two
-# features for simplicity
-X = iris.data[:, :2]
-y = iris.target
-
-# Fit the SVM model
-model = svm.SVC(kernel='linear')
-model.fit(X, y)
-
-# Predict using the SVM model
-predictions = model.predict(X)
-
-# Evaluate the predictions
-accuracy = model.score(X, y)
-print("Accuracy of SVM:", accuracy)
-'''
-
-
-
-"""#SVM (kernel = rbf, poly and something else)
-#Logistic Regression
-#Decision Tree
-#Random Forest
-
-#Better as numpy array
-"""
-
-
-
 def classifier_modeler(int_choice, ds_train, ds_test): #classifier_choice
     
     #classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest
-    
-    
+
     X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
     X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images')
 
+    model = model_training(int_choice, X_train, y_train)
+    if model is None:
+        print("Model training failed.")
+        return
+    prediction_report(model, X_train, y_train,X_test, y_test)
 
-    if int_choice==0:
-        #train SVM
-        # kernels: linear, polynomial, rbf
-        
-      while True:
-        try:
+def model_training(choice, X_train, y_train):
+
+    if choice == 0:
+        while True:
+         try:
             kernel_choice = int(input("Specify your desired kernel: 0 - RBF, 1 - Linear, 2 - Poly "))
-        
+            
             if kernel_choice == 0:
             # rbf:
 
             #Train:
-                svm_rbf = SVC(kernel="rbf", gamma=0.5, C=1.0)
-                svm_rbf.fit(X_train, y_train)
-               
-                print("---SVM with RBF Kernel---")
-                prediction_report(svm_rbf, X_train, y_train,X_test, y_test)
-
+                model = SVC(kernel="rbf", gamma=0.5, C=1.0)
+                kernel_name = "RBF Kernel"
         
             elif kernel_choice == 1:
             # linear
 
             #Train:
-                svm_linear = SVC(kernel="linear", C=1.0)
-                svm_linear.fit(X_train, y_train)
-                
-                print("---SVM with Linear Regression Kernel---")
-                prediction_report(svm_linear, X_train, y_train,X_test, y_test)
+                model = SVC(kernel="linear", C=1.0)
+                kernel_name = "Linear Kernel"
 
             elif kernel_choice == 2:
             # poly
 
              #Train:
-                svm_poly = SVC(kernel="poly", gamma=0.5, C=1.0)
-                svm_poly.fit(X_train, y_train)
-                
-                print("---SVM with Polynomial Kernel---")
-                prediction_report(svm_poly, X_train, y_train,X_test, y_test)
-
-            break
-        
-        except ValueError:
-            print("Please input an integer value!")
+                model = SVC(kernel="poly", gamma=0.5, C=1.0)
+                kernel_name = "Polynomial Kernel"
             
-
+            model.fit(X_train, y_train)
+            print("---SVM with", kernel_name,"---") 
+            break
+         except ValueError:
+            print("Please input an integer value!")
         
-    elif int_choice==1:
-
+        
+    elif choice == 1:
         #train Logisitic Regression
         model = LogisticRegression(random_state=16)
         model.fit(X_train, y_train)
+        print("---Logistic Regression---")
 
-        print("---Logisitic Regression---")
-        prediction_report(model, X_train, y_train,X_test, y_test)
-
-
-    elif int_choice==2:
-        
+    elif choice == 2:
         #train Decision Tree
         model=DecisionTreeClassifier()
         model.fit(X_train,y_train)
-        
         print("---Decision Tree---")
-        prediction_report(model, X_train, y_train,X_test, y_test)
-       
 
-    elif int_choice==3:
+    elif choice == 3:
         #train Random Forest
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
-        
         print("---Random Forest---")
-        prediction_report(model, X_train, y_train,X_test, y_test)
-        
-    else: 
+
+    else:
         print("Invalid choice - Please choose one of the specified values!")
+        return None
+    try:
+        return model
+    except UnboundLocalError:
+        print("Model was not trained properly. Please check kernel choice.")
+        return None
 
 
 def prediction_report(model, X_train, y_train,X_test, y_test):
@@ -191,7 +147,7 @@ if __name__ == '__main__':
     # specify what classifier you want
   print("classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest")
   while True:
-        # try:
+        try:
             classifier_choice = int(input("Specify your choice of classifier (type -1 to exit):").strip())
             if classifier_choice == -1:
                 break
@@ -199,6 +155,8 @@ if __name__ == '__main__':
                 classifier_modeler(classifier_choice, train_dataset, test_dataset)
             else:
                 print("Please choose one of the specified values!")
+        except ValueError:
+            print("Please input one of the specified integers")
 
         #except ValueError:
          #   print("Please enter a valid integer.")
