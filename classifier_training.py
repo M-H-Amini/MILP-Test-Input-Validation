@@ -17,7 +17,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier 
 
 # Import functions from other files
-from csv_reader import *
+#from csv_reader import *
+from csv_reader_cifar10 import *
 #from csv_reader_cifar10 import *
 
 #SVM with kernel (try for all three)
@@ -32,8 +33,16 @@ def classifier_modeler(int_choice, ds_train, ds_test): #classifier_choice
     
     #classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest
 
-    X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
-    X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images')
+    """X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
+    X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images')"""
+
+    print("Preprocessing training data...")
+    X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='cifar_10_images')
+    print("Preprocessing on training done!")
+
+    print("Preprocessing testing data...")
+    X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='cifar_10_images')
+    input("Preprocessing on testing done!")
 
     model = model_training(int_choice, X_train, y_train)
     if model is None:
@@ -42,40 +51,37 @@ def classifier_modeler(int_choice, ds_train, ds_test): #classifier_choice
     prediction_report(model, X_train, y_train,X_test, y_test)
 
 def model_training(choice, X_train, y_train):
-
+    print("MEOW MEOW MEOW", choice)
     if choice == 0:
+        
         while True:
-         try:
-            kernel_choice = int(input("Specify your desired kernel: 0 - RBF, 1 - Linear, 2 - Poly "))
-            
-            if kernel_choice == 0:
-            # rbf:
-
+            try: 
+                kernel_choice = int(input("Specify your desired kernel: 0 - RBF, 1 - Linear, 2 - Poly "))
+                if kernel_choice in [0,1,2]:
+                    break
+            except ValueError:
+                print("Please enter a valid integer (0, 1, or 2).")
+        if kernel_choice == 0:
+            # rbf:W
             #Train:
-                model = SVC(kernel="rbf", gamma=0.5, C=1.0)
-                kernel_name = "RBF Kernel"
+            model = SVC(kernel="rbf", gamma=0.5, C=1.0)
+            kernel_name = "RBF Kernel"
         
-            elif kernel_choice == 1:
-            # linear
-
+        elif kernel_choice == 1:
+        # linear
             #Train:
-                model = SVC(kernel="linear", C=1.0)
-                kernel_name = "Linear Kernel"
+            model = SVC(kernel="linear", C=1.0)
+            kernel_name = "Linear Kernel"
 
-            elif kernel_choice == 2:
+        elif kernel_choice == 2:
             # poly
-
              #Train:
-                model = SVC(kernel="poly", gamma=0.5, C=1.0)
-                kernel_name = "Polynomial Kernel"
+            model = SVC(kernel="poly", gamma=0.5, C=1.0)
+            kernel_name = "Polynomial Kernel"
             
-            model.fit(X_train, y_train)
-            print("---SVM with", kernel_name,"---") 
-            break
-         except ValueError:
-            print("Please input an integer value!")
-        
-        
+        model.fit(X_train, y_train)
+        print("---SVM with", kernel_name,"---") 
+                  
     elif choice == 1:
         #train Logisitic Regression
         model = LogisticRegression(random_state=16)
@@ -97,11 +103,9 @@ def model_training(choice, X_train, y_train):
     else:
         print("Invalid choice - Please choose one of the specified values!")
         return None
-    try:
-        return model
-    except UnboundLocalError:
-        print("Model was not trained properly. Please check kernel choice.")
-        return None
+    
+    return model
+    
 
 
 def prediction_report(model, X_train, y_train,X_test, y_test):
@@ -125,8 +129,10 @@ def prediction_report(model, X_train, y_train,X_test, y_test):
 if __name__ == '__main__':
 
   #You can use a different csv file. This is just a sample
-  csv_file_path = "imagenet_experiment_results.csv" 
-  folder_name = "csv_images"
+  """csv_file_path = "imagenet_experiment_results.csv" 
+  folder_name = "csv_images" """
+  csv_file_path = "cifar10_experiment_results.csv" 
+  folder_name = "cifar_10_images"
   img_url_col = "image_link"
   percent = 0.2
   
@@ -146,12 +152,14 @@ if __name__ == '__main__':
 
     # specify what classifier you want
   print("classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest")
-  while True:
+  looper = True
+  while looper == True:
         try:
             classifier_choice = int(input("Specify your choice of classifier (type -1 to exit):").strip())
             if classifier_choice == -1:
-                break
+                looper = False
             elif classifier_choice == 0 or classifier_choice == 1 or classifier_choice == 2 or classifier_choice == 3 :
+                looper = False
                 classifier_modeler(classifier_choice, train_dataset, test_dataset)
             else:
                 print("Please choose one of the specified values!")
