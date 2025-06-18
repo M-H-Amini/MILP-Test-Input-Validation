@@ -199,7 +199,33 @@ def csv_reader(csv_path):
   return pairs,  pair_transforms #change later => for debugging
 
 
- 
+def image_pair_prep (dataset, ds_folder='cifar_10_images'):
+
+  X = []
+
+  for pair in dataset:
+    imgA_path = os.path.join(ds_folder, pair['img1'])
+    imgB_path = os.path.join(ds_folder, pair['img2'])
+
+    imgA = np.array(Image.open(imgA_path).convert("RGB"))
+    imgB = np.array(Image.open(imgB_path).convert("RGB"))
+
+    numpy_arrayA = preprocess_input(cv2.resize(imgA, (224, 224)))
+    numpy_arrayB = preprocess_input(cv2.resize(imgB, (224, 224)))
+    
+    if numpy_arrayA.shape != numpy_arrayB.shape:
+      print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
+      continue
+    #pair_metrics = computeMetrics(numpy_arrayA, numpy_arrayB)
+    X.append(numpy_arrayA)
+    X.append(numpy_arrayB)
+  
+  X = np.array(X)
+  
+  return X
+
+
+
 def compute_metrics_on_dataset(dataset, ds_folder='cifar_10_images'): #is this how you train it?
   
   """
@@ -212,32 +238,19 @@ def compute_metrics_on_dataset(dataset, ds_folder='cifar_10_images'): #is this h
     Matrix: returns the matrix containing the computed metrics for all the image pairs
   """
   
-  X = []
+  X = image_pair_prep(dataset, ds_folder='cifar_10_images')
   y = []
 
+  print('Before calling computeVGG')
+  total_metrics = compute_VGG16_metrics(X)
+  print('After calling computeVGG')
+
   for pair in dataset:
-
-    imgA_path = os.path.join(ds_folder, pair['img1'])
-    imgB_path = os.path.join(ds_folder, pair['img2'])
-
-    """imgA_path = pair['img1'] 
-    imgB_path = pair['img2']"""
-
-    imgA = Image.open(imgA_path)
-    imgB = Image.open(imgB_path)
-    numpy_arrayA = np.array(imgA)
-    numpy_arrayB = np.array(imgB)
-    if numpy_arrayA.shape != numpy_arrayB.shape:
-      print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
-      continue
-    pair_metrics = computeMetrics(numpy_arrayA, numpy_arrayB)
-    X.append(pair_metrics)
     y.append(pair['label'])
-  
-  X = np.array(X)
+
   y = np.array(y)
 
-  return X,y
+  return total_metrics,y
 
 
 
