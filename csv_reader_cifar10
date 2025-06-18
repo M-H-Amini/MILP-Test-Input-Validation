@@ -210,8 +210,10 @@ def image_pair_prep (dataset, ds_folder='cifar_10_images'):
     imgA = np.array(Image.open(imgA_path).convert("RGB"))
     imgB = np.array(Image.open(imgB_path).convert("RGB"))
 
-    numpy_arrayA = preprocess_input(cv2.resize(imgA, (224, 224)))
-    numpy_arrayB = preprocess_input(cv2.resize(imgB, (224, 224)))
+    #numpy_arrayA = preprocess_input(cv2.resize(imgA, (224, 224)))
+    #numpy_arrayB = preprocess_input(cv2.resize(imgB, (224, 224)))
+    numpy_arrayA = cv2.resize(imgA, (224, 224))
+    numpy_arrayB = cv2.resize(imgB, (224, 224))
     
     if numpy_arrayA.shape != numpy_arrayB.shape:
       print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
