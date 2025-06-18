@@ -305,9 +305,12 @@ def computeMetrics(img_A, img_B):
 
   #assuming that distances = [5] (5px apart) and angles = [0] (horizontal to each other)
   print()
-  glcm_A = compute_glcm_features(rgb_A, distances=distances, angles=angles) 
-  glcm_B = compute_glcm_features(rgb_B, distances=distances, angles=angles) 
-  #print((glcm_A))
+  try:
+    glcm_A = compute_glcm_features(rgb_A, distances=distances, angles=angles) 
+    glcm_B = compute_glcm_features(rgb_B, distances=distances, angles=angles) 
+
+  except Exception as e:
+    print("GLCM computation failed:", e)
 
   contr_A = glcm_A[0][0,0]
   contr_B = glcm_B[0][0,0]
