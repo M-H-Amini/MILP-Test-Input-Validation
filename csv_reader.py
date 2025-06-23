@@ -13,7 +13,6 @@ import os
 
 #importing functions from other files
 from computeMetrics import *
-from training_classifiers import *
 
 
 #For working with tuples
@@ -350,6 +349,7 @@ if __name__ == '__main__':
   print("Computed metrics for all pairs: ")
   print(computed_metrics)"""
 
+  '''
 
   totalValid = 0
   totalInvalid = 0
@@ -360,6 +360,7 @@ if __name__ == '__main__':
       totalInvalid+=1
   print("Total valid pairs: ", totalValid)
   print("Total invalid pairs", totalInvalid)
+
   
   # check for duplicates
   totalDuplicates = 0
@@ -372,7 +373,51 @@ if __name__ == '__main__':
     if count > 1:
       totalDuplicates += (count-1)
   
+  print("Total number of duplicates: ", totalDuplicates)'''
+
+  
+  # check for duplicates
+  totalDuplicates = 0
+
+  #converts pairs, that were dictionarries, to tuples.  
+  myTuples = [dict_to_tuple(pair) for pair in myPairs]
+  uniquePairs = []
+  totalUnique = 0
+  pair_counts = Counter(myTuples)
+
+  for pair_tuple, count in pair_counts.items():
+    if count > 1:
+      totalDuplicates += (count-1)
+      totalUnique += 1
+      uniquePairs.append(dict(pair_tuple))
+      #totalUnique += 1
+    elif count == 1:
+      totalUnique += 1
+      uniquePairs.append(dict(pair_tuple))
+  
+  totalValid = 0
+  totalInvalid = 0
+  for i in myPairs:
+    if i['label'] == 1:
+      totalValid+=1
+    else:
+      totalInvalid+=1
+
+  totalValidUnique = 0
+  totalInvalidUnique = 0
+  for i in uniquePairs:
+    if i['label'] == 1:
+      totalValidUnique+=1
+    else:
+      totalInvalidUnique+=1
+  
+  print("Total valid pairs: ", totalValid)
+  print("Total invalid pairs", totalInvalid)
+  
   print("Total number of duplicates: ", totalDuplicates)
+  print("Total number of unique pairs: ", totalUnique)
+  print("Total number of valid pairs (no duplicates):",totalValidUnique )
+  print("Total invalid pairs (no duplicates): ", totalInvalidUnique)
 
 
   while True:
