@@ -2,6 +2,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 # Data handling
 import pandas as pd
@@ -14,9 +15,10 @@ from PIL import Image
 
 # Deep learning
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
+
 
 #from tensorflow.keras.losses import mean_squared_error as mse
 #commented out since we already manually calculate the mse
@@ -61,7 +63,7 @@ def compute_VGG16_metrics(X):
   X_preprocessed = preprocess_input(X_resized)
   weights = fcn_weights
   model = fcn_model
-  features = vgg_model.predict(X_preprocessed, batch_size=128)  # shape: (20000, 7, 7, 512) for default VGG16
+  features = vgg_model.predict(X_preprocessed, batch_size=128) # shape: (20000, 7, 7, 512) for default VGG16
   metrics_total = []
 
   print(" VGG16 function: predict done!")
@@ -115,19 +117,27 @@ def compute_VGG16_metrics(X):
     metrics_total.append(metrics_without_vgg16)
 
   index_metrics = 0
+  #total_metrics_list = []
   print("Adding the vgg16 metrics to the rest")
-  for pair_metrics in X:
-     pair_metrics.extend(
-      [cs_result[index_metrics],
-      cpl_result[index_metrics],
-      sss_result[index_metrics]]
-    )
+  for pair_metrics in metrics_total:
+     #pair_metrics_list = pair_metrics.tolist()
+     pair_metrics.append(cs_result[index_metrics])
+     pair_metrics.append(cpl_result[index_metrics])
+     pair_metrics.append(sss_result[index_metrics])
+     #metrics_total.append(pair_metrics_list)
      index_metrics+=1
   
-  metric_names = ["KL", "MSE", "HistCorr", "HistInter", "PSNR", "SSIM", "TSI", "WD", "CPL", "CS","SSS"]
+  #total_metrics = np.array(total_metrics_list)
+  total_metrics = np.array(metrics_total)
+  #print(total_metrics.shape())
+  #with np.printoptions(threshold=sys.maxsize):
+  # print(total_metrics)
+  
+  metric_names = ["KL", "MSE", "HistCorr", "HistInter", "PSNR", "SSIM", "TSI", "WD", "CS","CPL","SSS"]
   print(metric_names)
 
-  return metrics_total
+  #return metrics_total
+  return total_metrics
 
 def sss_result_batch(X, model, weights,batch_size=4):
     sss_result = []
