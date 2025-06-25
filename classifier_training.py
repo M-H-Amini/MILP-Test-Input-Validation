@@ -78,7 +78,7 @@ def model_training(choice, kernel_choice, X_train, y_train):
         elif kernel_choice == 2:
             # poly
              #Train:
-            model = SVC(kernel="poly", gamma=0.5, C=1.0)
+            model = SVC(kernel="poly", degree=3)
             kernel_name = "Polynomial Kernel"
             
         model.fit(X_train, y_train)
