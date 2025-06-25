@@ -17,8 +17,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier 
 
 # Import functions from other files
-from csv_reader import *
-#from csv_reader_cifar10 import *
+#from csv_reader import *
+from csv_reader_cifar10 import *
 
 
 #SVM with kernel (try for all three)
@@ -35,16 +35,21 @@ def classifier_modeler(int_choice, kernel_choice, ds_train, ds_test): #classifie
     
     #classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest
 
+
     """X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
     X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images')"""
 
     print("Preprocessing training data...")
-    X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
+    #X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
+    X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='cifar_10_images') 
     print("Preprocessing on training done!")
+    #print("Total number of unique pairs for Training Set:", totalUnique)
 
     print("Preprocessing testing data...")
-    X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images') #cifar_10_images
+    #X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images') #cifar_10_images
+    X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='cifar_10_images') #cifar_10_images
     print("Preprocessing on testing done!")
+    #print("Total number of unique pairs for Test Set:", totalUnique)
 
     model = model_training(int_choice, kernel_choice, X_train, y_train)
     if model is None:
@@ -52,7 +57,7 @@ def classifier_modeler(int_choice, kernel_choice, ds_train, ds_test): #classifie
         return
     prediction_report(model, X_train, y_train,X_test, y_test)
 
-def model_training(choice, kernel_choice, X_train, y_train):
+def model_training(choice, kernel_choice, X_train, y_train): #get rid of total unique later
     if choice == 0:
         
         """  while True:
@@ -110,10 +115,11 @@ def model_training(choice, kernel_choice, X_train, y_train):
     
 
 
-def prediction_report(model, X_train, y_train,X_test, y_test):
+def prediction_report(model, X_train, y_train,X_test, y_test): #get rid of total unique
      # Training Set         
         predictions_train_y=model.predict(X_train)
         print("Training Set:")
+        print("Total number of unique pairs:", len(y_train))
         print("Accuracy:", accuracy_score(y_train, predictions_train_y))
         print("Precision:", precision_score(y_train, predictions_train_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))  
         print("Recall:", recall_score(y_train, predictions_train_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
@@ -122,6 +128,7 @@ def prediction_report(model, X_train, y_train,X_test, y_test):
         # Test Set       
         predictions_test_y=model.predict(X_test)
         print("Testing Set:")
+        print("Total number of unique pairs:", len(X_test))
         print("Accuracy:", accuracy_score(y_test, predictions_test_y))
         print("Precision:", precision_score(y_test,predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))  
         print("Recall:", recall_score(y_test, predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
@@ -131,26 +138,22 @@ def prediction_report(model, X_train, y_train,X_test, y_test):
 if __name__ == '__main__':
 
   #You can use a different csv file. This is just a sample
-  csv_file_path = "imagenet_experiment_results.csv" 
-  folder_name = "csv_images" 
-  #csv_file_path = "cifar10_experiment_results.csv" 
-  #folder_name = "cifar_10_images"
+  #csv_file_path = "imagenet_experiment_results.csv" 
+  #folder_name = "csv_images" 
+  csv_file_path = "cifar10_experiment_results.csv" 
+  folder_name = "cifar_10_images"
   img_url_col = "image_link"
   percent = 0.2
   
   download_img(csv_file_path, folder_name, img_url_col)
   
   myPairs, myChecks = csv_reader(csv_file_path)
-  
-  train_dataset, test_dataset = dataset_split(percent, myPairs)
-  '''while True:
-        try:
-            index = int(input("\nEnter index to display image pair (type -1 to exit): "))
-            if index == -1:
-                break
-            display_img(index, myPairs)
-        except ValueError:
-            print("Please enter a valid integer.")'''
+
+  ds_unique = unique_pair_dataset(myPairs)
+
+  #train_dataset, test_dataset = dataset_split(percent, myPairs)
+
+  train_dataset, test_dataset = dataset_split(percent, ds_unique)
 
     # specify what classifier you want
   print("classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest")
