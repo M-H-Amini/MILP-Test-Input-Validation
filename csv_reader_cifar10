@@ -317,7 +317,19 @@ def display_img(index, myPairs):
   else:
       print("Error => index out of bounds")
       return
-  
+
+def unique_pair_dataset(dataset):
+  ds_unique = []
+  print("inside the unique pair function")
+  myTuples = [dict_to_tuple(pair) for pair in dataset]  
+  pair_counts = Counter(myTuples)
+
+  for pair_tuple in pair_counts:
+    print("inside the pair_tuple for-loop")
+    ds_unique.append(dict(pair_tuple))
+    #print(dict(pair_tuple))
+    
+  return ds_unique
 
 def dataset_split(percent, myPairs):
 
