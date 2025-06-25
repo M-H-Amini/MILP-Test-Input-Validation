@@ -287,6 +287,21 @@ def dataset_split(percent, myPairs):
 
     return ds_train, ds_test
 
+
+
+def unique_pair_dataset(dataset):
+  ds_unique = []
+  print("inside the unique pair function")
+  myTuples = [dict_to_tuple(pair) for pair in dataset]  
+  pair_counts = Counter(myTuples)
+
+  for pair_tuple in pair_counts:
+    print("inside the pair_tuple for-loop")
+    ds_unique.append(dict(pair_tuple))
+    #print(dict(pair_tuple))
+    
+  return ds_unique
+
  
 def compute_metrics_on_dataset(dataset, ds_folder='csv_images'): #is this how you train it?
   
@@ -389,11 +404,13 @@ if __name__ == '__main__':
     if count > 1:
       totalDuplicates += (count-1)
       totalUnique += 1
-      uniquePairs.append(dict(pair_tuple))
-      #totalUnique += 1
     elif count == 1:
       totalUnique += 1
+
+  for pair_tuple in pair_counts:
       uniquePairs.append(dict(pair_tuple))
+
+  totalUnique = len(uniquePairs)
   
   totalValid = 0
   totalInvalid = 0
@@ -413,7 +430,6 @@ if __name__ == '__main__':
   
   print("Total valid pairs: ", totalValid)
   print("Total invalid pairs", totalInvalid)
-  
   print("Total number of duplicates: ", totalDuplicates)
   print("Total number of unique pairs: ", totalUnique)
   print("Total number of valid pairs (no duplicates):",totalValidUnique )
