@@ -135,6 +135,13 @@ def prediction_report(model, X_train, y_train,X_test, y_test): #get rid of total
         print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
 
 
+
+def populate_def_pred():
+    pass
+
+
+
+
 if __name__ == '__main__':
 
   #You can use a different csv file. This is just a sample
@@ -154,6 +161,16 @@ if __name__ == '__main__':
   #train_dataset, test_dataset = dataset_split(percent, myPairs)
 
   train_dataset, test_dataset = dataset_split(percent, ds_unique)
+
+
+  # for populating df_pred for linear programming
+  d_nv, d_rest =  train_dataset, test_dataset
+  d_t, d_o = dataset_split(0.5, d_rest) # so that d_t and d_0 = 10% of the whole dataset
+  
+
+
+
+
 
     # specify what classifier you want
   print("classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest")
@@ -177,6 +194,13 @@ if __name__ == '__main__':
                         except ValueError:
                             print("Please input one of the specified integers")
                 classifier_modeler(classifier_choice, kernel_choice, train_dataset, test_dataset)
+
+                #continue - populate df_pred 
+                # test on all classifiers, include them in df_pred ==> suggested to just have the two best-performing classifiers, 
+                # but keep others just in case.
+
+
+
             else:
                 print("Please choose one of the specified values!")
         except ValueError:
