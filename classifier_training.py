@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn import tree
+import tqdm
 
 # Modelling
 
@@ -18,6 +19,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 # Import functions from other files
 #from csv_reader import *
+from mh_optimize import *
 from csv_reader_cifar10 import *
 
 
@@ -167,13 +169,13 @@ def train_and_predict(MODELS, d_t, d_o):
 
 
     print("Preprocessing training data...")
-    #X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
+    #X_dt, y_dt = compute_metrics_on_dataset(d_t, ds_folder='csv_images')
     X_dt, y_dt = compute_metrics_on_dataset(d_t, ds_folder='cifar_10_images') 
     print("Preprocessing on training done!")
     #print("Total number of unique pairs for Training Set:", totalUnique)
 
     print("Preprocessing testing data...")
-    #X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images') #cifar_10_images
+    #X_do, y_do = compute_metrics_on_dataset(d_o, ds_folder='csv_images') #cifar_10_images
     X_do, y_do = compute_metrics_on_dataset(d_o, ds_folder='cifar_10_images') #cifar_10_images
     print("Preprocessing on testing done!")
     #print("Total number of unique pairs for Test Set:", totalUnique)
@@ -183,7 +185,7 @@ def train_and_predict(MODELS, d_t, d_o):
     for model_name in MODELS:
         model = model_training(model_name, X_dt, y_dt)
         if model is None:
-            print("Model training failed.")
+            print("Modeltraining failed.")
             return
         dat = populate_def_pred(model,classifier_num, X_do)
         classifier_num+=1
@@ -195,10 +197,27 @@ def train_and_predict(MODELS, d_t, d_o):
     total_dat.to_csv('predicted_output_on_do.csv', index = False)
     counters_on_dataframe(total_dat)
     effort, w_list, x_list = mh_optimize(total_dat, 1)
+
+    for i in range(0, len(w_list)):
+      for value in total_dat["p_theta_"+str(i)]:
+            print(value)
+            value_sum = 0
+            for j in range(0, len(w_list)):
+                value_sum += value*w_list[j]
+                
+            if value_sum >= 1:
+                print("POOR ACCURACY:", value_sum)
+            else:
+                print("GOOD ACCURACY")
+    
+    
+
+        
+
     print('Effort:', effort)
-    #print('w_list:', w_l)
+    print('w_list:', w_list)
     #print('x_list:', x_list)
-    print(len(y_do))
+    print("Length: ", len(y_do))
 
 
 def counters_on_dataframe(dataframe):
@@ -235,13 +254,22 @@ def populate_def_pred(model, classifier_num, X_do):
         
         # model is trained on d_t, now it must predict d_o and populate df_pred
         
-            
-        # get P_theta_o
-        p_theta = model.predict_proba(X_do)[:,1] # so 0.9 = 90% probability 
+        print("Meow, we're in the populate_def_pred")
 
-        # get P_l_o
+        # get P_theta
+        batch_size = 128
+        p_theta = []
+        for i in tqdm(range(0, len(X_do), batch_size), desc= "Predicting Batches"):
+            batch = X_do[i:i+batch_size]
+            p_theta.append(model.predict_proba(batch)[:, 1])
+        p_theta = np.concatenate(p_theta)
+
+    
+        #p_theta = model.predict_proba(X_do)[:,1] # so 0.9 = 90% probability 
+
+        # get P_l
         p_l = model.predict(X_do)
-
+        #p_l = (p_theta >= 0.5).astype(float)
         # Get y => we already have it.
 
         model_name = type(model).__name__
@@ -256,19 +284,17 @@ def populate_def_pred(model, classifier_num, X_do):
     
         dat = pd.DataFrame(data)
        
+
         return dat
         #def_pred.to_csv('predicted_output_on_do.csv', index = False)
       
-      
-
-
-
+    
 
 if __name__ == '__main__':
 
   #You can use a different csv file. This is just a sample
   #csv_file_path = "imagenet_experiment_results.csv" 
-  #folder_name = "csv_images" ist
+  #folder_name = "csv_images" 
   csv_file_path = "cifar10_experiment_results.csv" 
   folder_name = "cifar_10_images"
   img_url_col = "image_link"
@@ -291,15 +317,20 @@ if __name__ == '__main__':
     #make duplicates of the training and test datasets
   #d_nv, d_to =  train_dataset, test_dataset 
   
-  d_t, d_rest = dataset_split(TRAIN_PERCENT, ds_unique)
+  d_rest, d_t = dataset_split(TRAIN_PERCENT, ds_unique)
   
-  d_o, d_nv = dataset_split(OPT_SPLIT/(1-TRAIN_PERCENT), d_rest)
+  d_nv, d_o = dataset_split(OPT_SPLIT/(1-TRAIN_PERCENT), d_rest)
 
   #for model in MODELS:
     #classifier_modeler(classifier_choice, kernel_choice, train_dataset, test_dataset)
-  #train_and_predict(MODELS,d_t, d_o)
+  train_and_predict(MODELS,d_t, d_o)
   #train_and_predict(MODELS,d_t, d_nv)
-  train_and_predict(MODELS,d_t, d_t)
+  #train_and_predict(MODELS,d_t, d_t)
+  print("length of d_t:", len(d_t))
+  print("length of d_rest:", len(d_rest)) 
+  print("length of d_nv:", len(d_nv))
+  print("length of d_o:", len(d_o))
+  #
     # 20, then 80   
     # 1/2, then 50/80
 
