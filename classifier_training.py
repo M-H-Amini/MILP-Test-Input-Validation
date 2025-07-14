@@ -168,7 +168,7 @@ def prediction_report(model, X_train, y_train,X_test, y_test): #get rid of total
         print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
 
 
-def train_and_predict(MODELS, d_t, d_o, alpha):
+def train_and_predict(model_name, d_t, d_o, alpha):
 
 
     print("Preprocessing training data...")
@@ -185,7 +185,7 @@ def train_and_predict(MODELS, d_t, d_o, alpha):
 
     total_dat = pd.DataFrame()
     classifier_num = 0
-    for model_name in MODELS:
+    """for model_name in MODELS:
         model = model_training(model_name, X_dt, y_dt)
         if model is None:
             print("Model training failed.")
@@ -194,6 +194,16 @@ def train_and_predict(MODELS, d_t, d_o, alpha):
         classifier_num+=1
     
         total_dat = pd.concat([total_dat, dat], axis=1) 
+"""
+
+    model = model_training(model_name,X_dt, y_dt)
+    if model is None:
+            print("Model training failed.")
+            return
+    dat = populate_def_pred(model,classifier_num, X_do)
+    classifier_num+=1
+    
+    total_dat = pd.concat([total_dat, dat], axis=1) 
 
     y = pd.DataFrame({'y': y_do})
     total_dat = pd.concat([total_dat, y], axis=1)
@@ -343,12 +353,12 @@ if __name__ == '__main__':
     #make duplicates of the training and test datasets
   #d_nv, d_to =  train_dataset, test_dataset 
   
-
+  header = True
   file_name = "experiment_results.csv"
   column_headers = ["Alpha", "Train_Ratio", "Opt_Ratio", "Model", "Accuracy Percentage", "Manual Percentage"]
     
   df = pd.DataFrame(columns=column_headers)
-  df.to_csv(file_name, index=False, header=True)
+  df.to_csv(file_name, header=header, index=False)
 
   
   for train_prct in TRAIN_PERCENTS:
@@ -366,9 +376,11 @@ if __name__ == '__main__':
                 total_manual_cnt += manual_count
                 accuracy_percent = total_accuracy_cnt/len(ds_unique)
                 manual_percent = total_manual_cnt/len(ds_unique)
-
-                experiment_row = pd.DataFrame({'Alpha':alpha, 'Train_Ratio':train_prct, 'Opt_Ratio': opt_prct, 'Model':classifier, 'Accuracy Percentage':accuracy_percent, 'Manual Percentage':manual_percent})
+                experiment_row = pd.DataFrame({'Alpha':[alpha], 'Train_Ratio':[train_prct], 'Opt_Ratio': [opt_prct], 'Model':[classifier], 'Accuracy Percentage':[accuracy_percent], 'Manual Percentage':[manual_percent]})
+                #experiment_row = pd.DataFrame({'Alpha':alpha, 'Train_Ratio':train_prct, 'Opt_Ratio': opt_prct, 'Model':classifier, 'Accuracy Percentage':accuracy_percent, 'Manual Percentage':manual_percent})
                 df = pd.concat([df, experiment_row ],ignore_index=True)
+                df.to_csv(file_name, header=header, index=False)
+                header = False
 
 
 
