@@ -28,6 +28,9 @@ from csv_reader_cifar10 import *
 #from sklearn import datasets
 from sklearn.svm import SVC
 
+#Experiments
+from multiprocessing import Pool
+
 #Predictions:
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
@@ -165,7 +168,7 @@ def prediction_report(model, X_train, y_train,X_test, y_test): #get rid of total
         print("F1 Score:", f1_score(y_test, predictions_test_y, average='binary' if len(np.unique(y_test)) == 2 else 'weighted'))
 
 
-def train_and_predict(MODELS, d_t, d_o):
+def train_and_predict(MODELS, d_t, d_o, alpha):
 
 
     print("Preprocessing training data...")
@@ -185,39 +188,55 @@ def train_and_predict(MODELS, d_t, d_o):
     for model_name in MODELS:
         model = model_training(model_name, X_dt, y_dt)
         if model is None:
-            print("Modeltraining failed.")
+            print("Model training failed.")
             return
         dat = populate_def_pred(model,classifier_num, X_do)
         classifier_num+=1
     
-        total_dat = pd.concat([total_dat, dat], axis=1)
+        total_dat = pd.concat([total_dat, dat], axis=1) 
 
     y = pd.DataFrame({'y': y_do})
     total_dat = pd.concat([total_dat, y], axis=1)
     total_dat.to_csv('predicted_output_on_do.csv', index = False)
-    counters_on_dataframe(total_dat)
-    effort, w_list, x_list = mh_optimize(total_dat, 1)
+    #counters_on_dataframe(total_dat)
+    #print("MEOW4")
+    effort, w_list, x_list = mh_optimize(total_dat, alpha)
+    #print("MEOW4.5")
 
-    for i in range(0, len(w_list)):
-      for value in total_dat["p_theta_"+str(i)]:
-            print(value)
-            value_sum = 0
-            for j in range(0, len(w_list)):
-                value_sum += value*w_list[j]
-                
-            if value_sum >= 1:
-                print("POOR ACCURACY:", value_sum)
-            else:
-                print("GOOD ACCURACY")
     
-    
+    #Manual Effort Calculator: percentage
+    # Accuracy Checker
 
+    accuracy_count = 0
+    manual_count = 0 
+
+
+    checker = True 
+    
+    for index, row in total_dat.iterrows():
+        value_sum = sum(row["p_theta_"+str(i)] * w_list[i] for i in range(len(w_list)))
+
+        if value_sum >= 1:
+            #AUTOMATIC
+            checker = all(row["p_l_" + str(k)] == row["y"] for k in range(len(w_list)))
+            if checker:
+                accuracy_count += 1
         
+        else:
+            #HUMAN-LABEL => assumed correct
+            accuracy_count += 1
+            manual_count += 1
+    
+    
+
+    print("ACCURACY", accuracy_count)
+    print("MANUAL", manual_count)
 
     print('Effort:', effort)
     print('w_list:', w_list)
     #print('x_list:', x_list)
-    print("Length: ", len(y_do))
+    #print("Length: ", len(y_do))
+    return accuracy_count, manual_count
 
 
 def counters_on_dataframe(dataframe):
@@ -250,11 +269,14 @@ def counters_on_dataframe(dataframe):
     print("cnt_correct", cnt_correct) 
 
     return cnt_auto, cnt_manual, cnt_correct
+
+
+
 def populate_def_pred(model, classifier_num, X_do):
         
         # model is trained on d_t, now it must predict d_o and populate df_pred
         
-        print("Meow, we're in the populate_def_pred")
+        #print("Meow, we're in the populate_def_pred")
 
         # get P_theta
         batch_size = 128
@@ -263,19 +285,20 @@ def populate_def_pred(model, classifier_num, X_do):
             batch = X_do[i:i+batch_size]
             p_theta.append(model.predict_proba(batch)[:, 1])
         p_theta = np.concatenate(p_theta)
-
+        #print("MEOW1")
     
         #p_theta = model.predict_proba(X_do)[:,1] # so 0.9 = 90% probability 
 
         # get P_l
         p_l = model.predict(X_do)
+        #print("MEOW2")
         #p_l = (p_theta >= 0.5).astype(float)
         # Get y => we already have it.
 
         model_name = type(model).__name__
         
 
-        print("Generating the df_pred file for:", model_name)
+        #print("Generating the df_pred file for:", model_name)
         data = {
             'p_l_'+ str(classifier_num) : p_l,
             'p_theta_'+ str(classifier_num) : p_theta
@@ -284,7 +307,7 @@ def populate_def_pred(model, classifier_num, X_do):
     
         dat = pd.DataFrame(data)
        
-
+        #print("MEOW3")
         return dat
         #def_pred.to_csv('predicted_output_on_do.csv', index = False)
       
@@ -298,10 +321,13 @@ if __name__ == '__main__':
   csv_file_path = "cifar10_experiment_results.csv" 
   folder_name = "cifar_10_images"
   img_url_col = "image_link"
-  TRAIN_PERCENT = 0.2
-  OPT_SPLIT = 0.5
-  MODELS = ['svm_rbf', 'logistic_regression', 'random_forest'] # ['svm_linear','decision_tree']
-  
+  #TRAIN_PERCENT = 0.2
+  TRAIN_PERCENTS = [0.1,0.2,0.3,0.4,0.5]
+  #OPT_SPLIT = 0.5
+  OPT_PERCENTS = [0.1,0.2,0.3,0.4,0.5]
+  MODELS = ['svm_rbf', 'logistic_regression', 'decision_tree', 'random_forest'] # ['svm_linear','decision_tree']
+  ALPHA = [0.90,0.95,0.99,1]
+
   download_img(csv_file_path, folder_name, img_url_col)
   
   myPairs, myChecks = csv_reader(csv_file_path)
@@ -317,64 +343,82 @@ if __name__ == '__main__':
     #make duplicates of the training and test datasets
   #d_nv, d_to =  train_dataset, test_dataset 
   
-  d_rest, d_t = dataset_split(TRAIN_PERCENT, ds_unique)
+
+  file_name = "experiment_results.csv"
+  column_headers = ["Alpha", "Train_Ratio", "Opt_Ratio", "Model", "Accuracy Percentage", "Manual Percentage"]
+    
+  df = pd.DataFrame(columns=column_headers)
+  df.to_csv(file_name, index=False, header=True)
+
   
-  d_nv, d_o = dataset_split(OPT_SPLIT/(1-TRAIN_PERCENT), d_rest)
+  for train_prct in TRAIN_PERCENTS:
+    for opt_prct in OPT_PERCENTS:
+        for classifier in MODELS:
+            for alpha in ALPHA:
+                d_rest, d_t = dataset_split(train_prct, ds_unique)
+                d_nv, d_o = dataset_split(opt_prct/(1-train_prct), d_rest)
+
+                total_accuracy_cnt = len(d_t)+len(d_o)
+                total_manual_cnt = len(d_t)+len(d_o)
+                accuracy_count, manual_count = train_and_predict(classifier,d_t, d_nv, alpha)
+                
+                total_accuracy_cnt += accuracy_count 
+                total_manual_cnt += manual_count
+                accuracy_percent = total_accuracy_cnt/len(ds_unique)
+                manual_percent = total_manual_cnt/len(ds_unique)
+
+                experiment_row = pd.DataFrame({'Alpha':alpha, 'Train_Ratio':train_prct, 'Opt_Ratio': opt_prct, 'Model':classifier, 'Accuracy Percentage':accuracy_percent, 'Manual Percentage':manual_percent})
+                df = pd.concat([df, experiment_row ],ignore_index=True)
+
+
+
+# the experiments csv file, save for each experiment
+# Columns: Experiment#, 
+
+"""
+
+
+
+  #d_rest, d_t = dataset_split(TRAIN_PERCENT, ds_unique)
+  #d_nv, d_o = dataset_split(OPT_SPLIT/(1-TRAIN_PERCENT), d_rest)
+
+  #prep the accuracy and manual counters for the total dataset
+  total_accuracy_cnt = len(d_t)+len(d_o)
+  total_manual_cnt = len(d_t)+len(d_o)
 
   #for model in MODELS:
     #classifier_modeler(classifier_choice, kernel_choice, train_dataset, test_dataset)
-  train_and_predict(MODELS,d_t, d_o)
-  #train_and_predict(MODELS,d_t, d_nv)
-  #train_and_predict(MODELS,d_t, d_t)
+  accuracy_count, manual_count = train_and_predict(MODELS,d_t, d_nv)
+  #print("MEOW5")
   print("length of d_t:", len(d_t))
   print("length of d_rest:", len(d_rest)) 
   print("length of d_nv:", len(d_nv))
   print("length of d_o:", len(d_o))
-  #
-    # 20, then 80   
-    # 1/2, then 50/80
+  total_accuracy_cnt += accuracy_count
+  total_manual_cnt += manual_count
+
+  print("Total Accuracy count:", total_accuracy_cnt)
+  print("Total Manual count:", total_manual_cnt)
+
+  accuracy_percent = total_accuracy_cnt/len(ds_unique)
+  manual_percent = total_manual_cnt/len(ds_unique)
+
+  print("Total Accuracy percent:", accuracy_percent)
+  print("Total Manual percent:", manual_percent)
 
 
 
+seeds = [0, 1, 2, 3, 4]
+with Pool(processes=5) as pool:
+    pool.map(run_experiment, seeds)
 
+"""
 
-  '''# specify what classifier you want
-  print("classifiers: 0 - SVM, 1 - Logistic Regression, 2 - Decision Tree, 3 - Random Forest")
-  looper = True
-  kernel_choice = 0
-  while looper == True:
-        try:
-            classifier_choice = int(input("Specify your choice of classifier (type -1 to exit):").strip())
-            if classifier_choice == -1:
-                looper = False
-            elif classifier_choice == 0 or classifier_choice == 1 or classifier_choice == 2 or classifier_choice == 3 :
-                looper = False
-                if classifier_choice == 0:
-                    while True:
-                        try:
-                            print("Specify your desired kernel: 0 - RBF, 1 - Linear, 2 - Poly ")
-                            kernel_choice = int(input("Specify your choice of kernel (type -1 to exit):").strip())
-                            if classifier_choice == -1:
-                                break
-                            break
-                        except ValueError:
-                            print("Please input one of the specified integers")
-                #classifier_modeler(classifier_choice, kernel_choice, train_dataset, test_dataset)
-                train_and_predict(classifier_choice, kernel_choice,d_t, d_o)
-
-
-                #continue - populate df_pred 
-                # test on all classifiers, include them in df_pred ==> suggested to just have the two best-performing classifiers, 
-                # but keep others just in case.
-
-
-
-            else:
-                print("Please choose one of the specified values!")
-        except ValueError:
-            print("Please input one of the specified integers")
-'''
-        #except ValueError:
-         #   print("Please enter a valid integer.")
-
-
+"""
+screen -S my_experiment
+python training_classifiers_new.py
+Ctrl + A, then D (detaches from screen)
+screen -r my_experiment (retaches to screen)
+screen -ls (lists all running screens)
+screen -X -S my_experiment quit (kills screen session)
+"""
