@@ -15,7 +15,7 @@ from PIL import Image
 
 # Deep learning
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
 
@@ -66,7 +66,7 @@ def compute_VGG16_metrics(X):
   features = vgg_model.predict(X_preprocessed, batch_size=128) # shape: (20000, 7, 7, 512) for default VGG16
   metrics_total = []
 
-  print(" VGG16 function: predict done!")
+  #print(" VGG16 function: predict done!")
 
   f_A, f_B = features[::2], features[1::2]  # even indices for f_A and odd indices for f_B
 
@@ -80,7 +80,7 @@ def compute_VGG16_metrics(X):
   # Compute cosine similarity and CPL in vectorized fashion:
 
   cs_result = np.array([cosine_similarity([a], [b])[0][0] for a, b in zip(f_A_flat, f_B_flat)])
-  print("Inside VGG16 function: cosine similarity done!")
+  #print("Inside VGG16 function: cosine similarity done!")
   cpl_result = np.mean((f_A_flat - f_B_flat)**2, axis=1)
   
 
@@ -105,20 +105,20 @@ def compute_VGG16_metrics(X):
 
     
 
-  print("Inside VGG16 function: before calling the computeMetrics!")
+  #print("Inside VGG16 function: before calling the computeMetrics!")
   for i in range(0, len(X),2):
     img_A = X[i]
     img_B = X[i+1]
    
 
     metrics_without_vgg16 = computeMetrics(img_A, img_B)
-    print("Inside VGG16 function: after calling the computeMetrics!")
+    #print("Inside VGG16 function: after calling the computeMetrics!")
     metrics_without_vgg16 = list(metrics_without_vgg16)
     metrics_total.append(metrics_without_vgg16)
 
   index_metrics = 0
   #total_metrics_list = []
-  print("Adding the vgg16 metrics to the rest")
+  #print("Adding the vgg16 metrics to the rest")
   for pair_metrics in metrics_total:
      #pair_metrics_list = pair_metrics.tolist()
      pair_metrics.append(cs_result[index_metrics])
@@ -147,7 +147,7 @@ def sss_result_batch(X, model, weights,batch_size=4):
     model.eval()
 
     for i in range(0, len(X), batch_size*2):
-        print("Inside the main for-loop in SSS_RESULT_BATCH")
+        #print("Inside the main for-loop in SSS_RESULT_BATCH")
         tensors_A = []
         tensors_B = []
 
@@ -177,7 +177,7 @@ def sss_result_batch(X, model, weights,batch_size=4):
 
         torch.cuda.empty_cache() # to free up some memory
 
-    print("Finished VGG16 function for-loop!")
+    #print("Finished VGG16 function for-loop!")
     return np.array(sss_result)
 
   
@@ -240,15 +240,15 @@ def computeMetrics(img_A, img_B):
  #normalize the histograms + avoid division by 0 issues
   hist_A = np.clip(hist_A/np.sum(hist_A), 1e-10, None)
   hist_B = np.clip(hist_B/np.sum(hist_B), 1e-10, None)
-  print("computed value 1")
+  #print("computed value 1")
   kl_result = np.sum(rel_entr(hist_A, hist_B))
 
 #mse
-  print("computed value 2 ")
+  #print("computed value 2 ")
   mse_result = my_mse(img_A_new, img_B_new)
 
 #psnr
-  print("computed value 3")
+  #print("computed value 3")
   psnr_result = cv2.PSNR(img_A_new, img_B_new)
 
 #ssim 
@@ -267,7 +267,7 @@ def computeMetrics(img_A, img_B):
   rgb_A_float = img_as_float(rgb_A)
   rgb_B_float = img_as_float(rgb_B)
   ssim_result = structural_similarity(rgb_A_float, rgb_B_float, data_range=1.0, channel_axis=-1)
-  print("computed value 4")
+  #print("computed value 4")
   
   #rgb_A_float = np.clip(rgb_A.astype(np.float32) / 255.0, 0.0, 1.0)
   #where last axis is the colours channel
@@ -314,7 +314,7 @@ def computeMetrics(img_A, img_B):
   rgb_B = cv2.cvtColor(img_B_new, cv2.COLOR_BGR2RGB)
 
   #assuming that distances = [5] (5px apart) and angles = [0] (horizontal to each other)
-  print()
+  #print()
   try:
     glcm_A = compute_glcm_features(rgb_A, distances=distances, angles=angles) 
     glcm_B = compute_glcm_features(rgb_B, distances=distances, angles=angles) 
@@ -336,16 +336,16 @@ def computeMetrics(img_A, img_B):
   '''glcm_contrast = abs(graycoprops(glcm_A, 'contrast')[0, 0] - graycoprops(glcm_B, 'contrast')[0, 0])
   glcm_dissim = abs(graycoprops(glcm_A, 'dissimilarity')[0, 0] - graycoprops(glcm_B, 'dissimilarity')[0, 0])
 '''
-  print("computed value 5")
+  #print("computed value 5")
   tsi_result = (glcm_contrast + glcm_dissim)/2
 
 #wd
-  print("computed value 6")
+  #print("computed value 6")
   wd_result = wasserstein_distance(g_A.flatten(), g_B.flatten())
 
   #metrics = np.array([cpl_result, cs_result, kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result, sss_result, tsi_result, wd_result])
   metrics = np.array([kl_result, mse_result, hist_corr, hist_inter,psnr_result,ssim_result,tsi_result, wd_result])
-  print("All none VGG16 metrics are computed!")
+  #print("All none VGG16 metrics are computed!")
   return metrics
 
 def my_mse(img1, img2):
