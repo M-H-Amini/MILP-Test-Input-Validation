@@ -365,6 +365,18 @@ if __name__ == '__main__':
     for opt_prct in OPT_PERCENTS:
         for classifier in MODELS:
             for alpha in ALPHA:
+                existing = df[
+                    (df['Alpha'] == alpha) &
+                    (df['Train_Ratio'] == train_prct) &
+                    (df['Opt_Ratio'] == opt_prct) &
+                    (df['Model'] == classifier) &
+                    (df['Accuracy Percentage'] == accuracy_percent) &
+                    (df['Manual Percentage'] == manual_percent)
+                ]
+
+                if not existing.empty:
+                    continue
+                
                 d_rest, d_t = dataset_split(train_prct, ds_unique)
                 d_nv, d_o = dataset_split(opt_prct/(1-train_prct), d_rest)
 
@@ -378,10 +390,16 @@ if __name__ == '__main__':
                 manual_percent = total_manual_cnt/len(ds_unique)
                 experiment_row = pd.DataFrame({'Alpha':[alpha], 'Train_Ratio':[train_prct], 'Opt_Ratio': [opt_prct], 'Model':[classifier], 'Accuracy Percentage':[accuracy_percent], 'Manual Percentage':[manual_percent]})
                 #experiment_row = pd.DataFrame({'Alpha':alpha, 'Train_Ratio':train_prct, 'Opt_Ratio': opt_prct, 'Model':classifier, 'Accuracy Percentage':accuracy_percent, 'Manual Percentage':manual_percent})
+            
                 df = pd.concat([df, experiment_row ],ignore_index=True)
                 df.to_csv(file_name, header=header, index=False)
                 header = False
 
+
+
+
+
+# Add new code that if these values already exist, skip them and do next combination.
 
 
 # the experiments csv file, save for each experiment
