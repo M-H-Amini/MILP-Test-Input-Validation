@@ -291,12 +291,12 @@ def dataset_split(percent, myPairs):
 
 def unique_pair_dataset(dataset):
   ds_unique = []
-  print("inside the unique pair function")
+  #print("inside the unique pair function")
   myTuples = [dict_to_tuple(pair) for pair in dataset]  
   pair_counts = Counter(myTuples)
 
   for pair_tuple in pair_counts:
-    print("inside the pair_tuple for-loop")
+    #print("inside the pair_tuple for-loop")
     ds_unique.append(dict(pair_tuple))
     #print(dict(pair_tuple))
     
@@ -331,7 +331,7 @@ def compute_metrics_on_dataset(dataset, ds_folder='csv_images'): #is this how yo
     numpy_arrayA = np.array(imgA)
     numpy_arrayB = np.array(imgB)
     if numpy_arrayA.shape != numpy_arrayB.shape:
-      print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
+      #print(f"Skipping mismatched pair: {pair['img1']} and {pair['img2']}")
       continue
     pair_metrics = computeMetrics(numpy_arrayA, numpy_arrayB)
     X.append(pair_metrics)
