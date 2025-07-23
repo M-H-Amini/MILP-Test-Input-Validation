@@ -357,22 +357,50 @@ if __name__ == '__main__':
   file_name = "experiment_results.csv"
   column_headers = ["Alpha", "Train_Ratio", "Opt_Ratio", "Model", "Accuracy Percentage", "Manual Percentage"]
     
-  df = pd.DataFrame(columns=column_headers)
-  df.to_csv(file_name, header=header, index=False)
+  if os.path.isfile(file_name) == False or os.stat(file_name).st_size == 0:
+    df = pd.DataFrame(columns=column_headers)
+    df.to_csv(file_name, header=header, index=False)
+  else:
+    #df = pd.DataFrame(columns=column_headers)
+    #temp = pd.read_csv(file_name)
+    #df = pd.concat([df, temp ],ignore_index=True)
+    df = pd.read_csv(file_name)
+    # Check for missing columns and add them if necessary
+    for col in column_headers:
+        if col not in df.columns:
+            df[col] = None  # or pd.NA if you prefer
 
-  
+    # Reorder columns to match your expected order
+    df = df[column_headers]
+    df['Alpha'] = pd.to_numeric(df['Alpha'], errors='coerce')
+    df['Train_Ratio'] = pd.to_numeric(df['Train_Ratio'], errors='coerce')
+    df['Opt_Ratio'] = pd.to_numeric(df['Opt_Ratio'], errors='coerce')
+                
+                
+
   for train_prct in TRAIN_PERCENTS:
     for opt_prct in OPT_PERCENTS:
         for classifier in MODELS:
             for alpha in ALPHA:
+                #print("Current file name:", file_name)
+                #print("Current df columns:", df.columns.tolist())
+                #print("First few rows of df:\n", df.head())
+                print("Checking for Alpha =", alpha)
+
+                #checks for existing cases
+                
+                
                 existing = df[
                     (df['Alpha'] == alpha) &
                     (df['Train_Ratio'] == train_prct) &
                     (df['Opt_Ratio'] == opt_prct) &
-                    (df['Model'] == classifier) &
-                    (df['Accuracy Percentage'] == accuracy_percent) &
-                    (df['Manual Percentage'] == manual_percent)
-                ]
+                    (df['Model'] == classifier)]
+                
+                '''  existing = df[
+                    (df['Alpha'].round(6) == round(alpha, 6)) &
+                    (df['Train_Ratio'].round(6) == round(train_prct,6)) &
+                    (df['Opt_Ratio'].round(6) == round(opt_prct, 6)) &
+                    (df['Model'] == classifier)]'''
 
                 if not existing.empty:
                     continue
@@ -382,12 +410,16 @@ if __name__ == '__main__':
 
                 total_accuracy_cnt = len(d_t)+len(d_o)
                 total_manual_cnt = len(d_t)+len(d_o)
+                accuracy_percent = total_accuracy_cnt/len(ds_unique)
+                manual_percent = total_manual_cnt/len(ds_unique)
+
+
+                
                 accuracy_count, manual_count = train_and_predict(classifier,d_t, d_nv, alpha)
                 
                 total_accuracy_cnt += accuracy_count 
                 total_manual_cnt += manual_count
-                accuracy_percent = total_accuracy_cnt/len(ds_unique)
-                manual_percent = total_manual_cnt/len(ds_unique)
+                
                 experiment_row = pd.DataFrame({'Alpha':[alpha], 'Train_Ratio':[train_prct], 'Opt_Ratio': [opt_prct], 'Model':[classifier], 'Accuracy Percentage':[accuracy_percent], 'Manual Percentage':[manual_percent]})
                 #experiment_row = pd.DataFrame({'Alpha':alpha, 'Train_Ratio':train_prct, 'Opt_Ratio': opt_prct, 'Model':classifier, 'Accuracy Percentage':accuracy_percent, 'Manual Percentage':manual_percent})
             
