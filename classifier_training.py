@@ -18,9 +18,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier 
 
 # Import functions from other files
-#from csv_reader import *
+from csv_reader import *
 from mh_optimize import *
-from csv_reader_cifar10 import *
+#from csv_reader_cifar10 import *
 
 
 #SVM with kernel (try for all three)
@@ -45,14 +45,14 @@ def classifier_modeler(model_name, ds_train, ds_test): #classifier_choice
     X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images')"""
 
     print("Preprocessing training data...")
-    #X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
-    X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='cifar_10_images') 
+    X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='csv_images')
+    #X_train, y_train = compute_metrics_on_dataset(ds_train, ds_folder='cifar_10_images') 
     print("Preprocessing on training done!")
     #print("Total number of unique pairs for Training Set:", totalUnique)
 
     print("Preprocessing testing data...")
-    #X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images') #cifar_10_images
-    X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='cifar_10_images') #cifar_10_images
+    X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='csv_images') #cifar_10_images
+    #X_test, y_test = compute_metrics_on_dataset(ds_test, ds_folder='cifar_10_images') #cifar_10_images
     print("Preprocessing on testing done!")
     #print("Total number of unique pairs for Test Set:", totalUnique)
 
@@ -172,14 +172,14 @@ def train_and_predict(model_name, d_t, d_o, alpha):
 
 
     print("Preprocessing training data...")
-    #X_dt, y_dt = compute_metrics_on_dataset(d_t, ds_folder='csv_images')
-    X_dt, y_dt = compute_metrics_on_dataset(d_t, ds_folder='cifar_10_images') 
+    X_dt, y_dt = compute_metrics_on_dataset(d_t, ds_folder='csv_images')
+    #X_dt, y_dt = compute_metrics_on_dataset(d_t, ds_folder='cifar_10_images') 
     print("Preprocessing on training done!")
     #print("Total number of unique pairs for Training Set:", totalUnique)
 
     print("Preprocessing testing data...")
-    #X_do, y_do = compute_metrics_on_dataset(d_o, ds_folder='csv_images') #cifar_10_images
-    X_do, y_do = compute_metrics_on_dataset(d_o, ds_folder='cifar_10_images') #cifar_10_images
+    X_do, y_do = compute_metrics_on_dataset(d_o, ds_folder='csv_images') #cifar_10_images
+    #X_do, y_do = compute_metrics_on_dataset(d_o, ds_folder='cifar_10_images') #cifar_10_images
     print("Preprocessing on testing done!")
     #print("Total number of unique pairs for Test Set:", totalUnique)
 
@@ -326,10 +326,10 @@ def populate_def_pred(model, classifier_num, X_do):
 if __name__ == '__main__':
 
   #You can use a different csv file. This is just a sample
-  #csv_file_path = "imagenet_experiment_results.csv" 
-  #folder_name = "csv_images" 
-  csv_file_path = "cifar10_experiment_results.csv" 
-  folder_name = "cifar_10_images"
+  csv_file_path = "imagenet_experiment_results.csv" 
+  folder_name = "csv_images" 
+  #csv_file_path = "cifar10_experiment_results.csv" 
+  #folder_name = "cifar_10_images"
   img_url_col = "image_link"
   #TRAIN_PERCENT = 0.2
   TRAIN_PERCENTS = [0.1,0.2,0.3,0.4,0.5]
@@ -354,7 +354,7 @@ if __name__ == '__main__':
   #d_nv, d_to =  train_dataset, test_dataset 
   
   header = True
-  file_name = "experiment_results.csv"
+  file_name = "calculated_imagenet_experiment_results.csv"
   column_headers = ["Alpha", "Train_Ratio", "Opt_Ratio", "Model", "Accuracy Percentage", "Manual Percentage"]
     
   if os.path.isfile(file_name) == False or os.stat(file_name).st_size == 0:
@@ -405,27 +405,35 @@ if __name__ == '__main__':
                 if not existing.empty:
                     continue
                 
+        
                 d_rest, d_t = dataset_split(train_prct, ds_unique)
-                d_nv, d_o = dataset_split(opt_prct/(1-train_prct), d_rest)
-
-                total_accuracy_cnt = len(d_t)+len(d_o)
-                total_manual_cnt = len(d_t)+len(d_o)
-                accuracy_percent = total_accuracy_cnt/len(ds_unique)
-                manual_percent = total_manual_cnt/len(ds_unique)
-
-
                 
-                accuracy_count, manual_count = train_and_predict(classifier,d_t, d_nv, alpha)
+                if train_prct == 0.5 and opt_prct == 0.5:
+                    continue
+
+                else:
+                    d_nv, d_o = dataset_split(opt_prct/(1-train_prct), d_rest)
+
+                    total_accuracy_cnt = len(d_t)+len(d_o)
+                    total_manual_cnt = len(d_t)+len(d_o)
                 
-                total_accuracy_cnt += accuracy_count 
-                total_manual_cnt += manual_count
+                    accuracy_count, manual_count = train_and_predict(classifier,d_t, d_nv, alpha)
                 
-                experiment_row = pd.DataFrame({'Alpha':[alpha], 'Train_Ratio':[train_prct], 'Opt_Ratio': [opt_prct], 'Model':[classifier], 'Accuracy Percentage':[accuracy_percent], 'Manual Percentage':[manual_percent]})
-                #experiment_row = pd.DataFrame({'Alpha':alpha, 'Train_Ratio':train_prct, 'Opt_Ratio': opt_prct, 'Model':classifier, 'Accuracy Percentage':accuracy_percent, 'Manual Percentage':manual_percent})
+                    total_accuracy_cnt += accuracy_count 
+                    total_manual_cnt += manual_count
+
+                    accuracy_percent = total_accuracy_cnt/len(ds_unique)
+                    manual_percent = total_manual_cnt/len(ds_unique)
+
+                    accuracy_percent = total_accuracy_cnt/len(ds_unique)
+                    manual_percent = total_manual_cnt/len(ds_unique) 
+
+                    experiment_row = pd.DataFrame({'Alpha':[alpha], 'Train_Ratio':[train_prct], 'Opt_Ratio': [opt_prct], 'Model':[classifier], 'Accuracy Percentage':[accuracy_percent], 'Manual Percentage':[manual_percent]})
+                    #experiment_row = pd.DataFrame({'Alpha':alpha, 'Train_Ratio':train_prct, 'Opt_Ratio': opt_prct, 'Model':classifier, 'Accuracy Percentage':accuracy_percent, 'Manual Percentage':manual_percent})
             
-                df = pd.concat([df, experiment_row ],ignore_index=True)
-                df.to_csv(file_name, header=header, index=False)
-                header = False
+                    df = pd.concat([df, experiment_row ],ignore_index=True)
+                    df.to_csv(file_name, header=header, index=False)
+                    header = False
 
 
 
