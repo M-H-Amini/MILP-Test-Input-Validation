@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 
 #Set our gpu/cuda
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import tensorflow as tf
 from tensorflow.keras.datasets import mnist
@@ -50,8 +50,9 @@ def download_img(folder_name):
 def train_MLP(x_train, y_train_cat, x_test, y_test_cat):
    print("Training MLP start!")
    model = Sequential([
-    #Flatten(input_shape=(28,28)),
+    Flatten(input_shape=(28,28)),
     Dense(128, activation="relu"),
+    #Dense(128, activation="relu", input_shape=(784,)),
     Dense(64, activation="relu"),
     Dense(10, activation="softmax") # for digits 0-9
     ])
@@ -60,7 +61,7 @@ def train_MLP(x_train, y_train_cat, x_test, y_test_cat):
                  loss = "categorical_crossentropy", 
                  metrics = ['accuracy'])
    
-   history = model.fit(x_train, y_train_cat, epochs=10, batch_size=32, validation_split=0.1)
+   history = model.fit(x_train, y_train_cat, epochs=10, batch_size=16, validation_split=0.1)
    print("Training for MLP is completed!")
 
    metrics = model.evaluate(x_test, y_test_cat)
@@ -71,6 +72,40 @@ def train_MLP(x_train, y_train_cat, x_test, y_test_cat):
    y_pred = model.predict(x_test)
    y_true = np.argmax(y_test_cat, axis = 1)
    y_pred_labels = np.argmax(y_pred, axis = 1)
+
+   '''print("Y_TEST VALS")
+   for i in range(3):
+      print(np.argmax(y_test_cat[i]))
+   print("Y_PRED VALS")
+   for i in range(3):
+      print(np.max(y_pred[i]))
+   print("Y_PRED_LABELS VALS")
+   for i in range(3):
+      print(y_pred_labels[i])
+'''
+   incorrect_pred = []
+   for i in range(len(y_test_cat)):
+      true_val = np.argmax(y_test_cat[i])
+      if true_val!=y_pred_labels[i]:
+         #put the number of image in the list
+         incorrect_img_index = i 
+         incorrect_pred.append(incorrect_img_index)
+   
+   #Verifying if the image accuracy checker is working
+   for i in range(3):
+      #print("images", y_test_cat[i])
+      print("Incorrect image:", incorrect_pred[i]+60000)
+      #print("Real val:",y_test_cat[incorrect_pred[i]])
+      print("Real val:",np.argmax(y_test_cat[incorrect_pred[i]]))
+      #print("Predicted vals",y_pred_labels[index_incorrect])
+      #print("Predictions:",y_pred[incorrect_pred[i]])
+      print("Prediction perct:",np.max(y_pred[incorrect_pred[i]]))
+      print("Prediction val:",np.argmax(y_pred[incorrect_pred[i]]))
+      #print("Predicted vals",y_pred_labels[incorrect_pred[i]])
+
+      
+      
+   
 
    print("MLP Classification Report:")
    print(classification_report(y_true, y_pred_labels))
@@ -101,7 +136,7 @@ def train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat):
                   loss = "categorical_crossentropy",
                   metrics = ['accuracy'])
     
-    history = model.fit(x_train_cnn, y_train_cat, epochs=5, batch_size=32, validation_split=0.1)
+    history = model.fit(x_train_cnn, y_train_cat, epochs=10, batch_size=16, validation_split=0.1)
     print("Training for CNN is completed!")
 
     metrics = model.evaluate(x_test_cnn, y_test_cat)
@@ -121,8 +156,17 @@ def train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat):
 
     return history
 
+
+#records all the images that cause the accuracy to drop, alongside their truth/predicted labels and confidence levels
+def inaccuracy_recorder(model, y_test):
+   # if i in y_test doesn't != model predicition for that image ==> inaccuracy
+
+   pass
+
+
 #plots
 def plot_learning_curve(history, title, save_path):
+   print("MEOW")
    accuracy = history.history["accuracy"]
    val_accuracy = history.history["val_accuracy"]
    loss = history.history["loss"]
@@ -213,7 +257,11 @@ plt.close()
 if __name__== '__main__':
     folder_name = "MLP_and_CNN_training"
     #LOAD DATA
+    #By defeault, training sets have 60,000 images so 0 - 59999
+    # Test sets have 10,000 images so 60000-69999
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+    
 
     #Flatten + Normalize the images
 
@@ -223,8 +271,9 @@ if __name__== '__main__':
     x_test = x_test.astype('float32')/ 255.0
 
     #Images for MLP
-    x_train_mlp = x_train.reshape(-1, 28*28)
-    x_test_mlp = x_test.reshape(-1, 28*28)
+    #x_train_mlp = x_train.reshape(-1, 28*28)
+    #x_test_mlp = x_test.reshape(-1, 28*28)
+    
 
     # Images for CNN (have channel dimension)
     x_train_cnn = x_train[..., tf.newaxis]
@@ -237,12 +286,16 @@ if __name__== '__main__':
     # One-hot encode labels
     y_train_cat = to_categorical(y_train)
     y_test_cat = to_categorical(y_test)
+
+
     
-    print("x_train shape:", x_train_mlp.shape)
+    #print("x_train shape:", x_train_mlp.shape)
+    print("x_train shape:", x_train.shape)
     print("x_train_cnn shape:", x_train_cnn.shape)
     print("y_train_cat shape:", y_train_cat.shape)
 
-    print("x_test shape:", x_test_mlp.shape)
+    #print("x_test shape:", x_test_mlp.shape)
+    print("x_test shape:", x_test.shape)
     print("x_test_cnn shape:", x_test_cnn.shape)    
     print("y_test_cat shape:", y_test_cat.shape)
 
@@ -258,9 +311,13 @@ if __name__== '__main__':
     #download_img(folder_name)
 
     #train MLP
-    history_mlp = train_MLP(x_train_mlp, y_train_cat, x_test_mlp, y_test_cat)
+    print("MEOW2")
+    #history_mlp = train_MLP(x_train_mlp, y_train_cat, x_test_mlp, y_test_cat)
+    history_mlp = train_MLP(x_train, y_train_cat, x_test, y_test_cat)
     plot_learning_curve(history_mlp, title_mlp, save_path_mlp)
-    
-    history_cnn = train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat)  
-    plot_learning_curve(history_cnn, title_cnn, save_path_cnn)
+    tf.keras.backend.clear_session()
+    print("MEOW3")
+    #train CNN
+    #history_cnn = train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat)  
+    #plot_learning_curve(history_cnn, title_cnn, save_path_cnn)
 
