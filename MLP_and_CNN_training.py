@@ -48,6 +48,7 @@ def download_img(folder_name):
 "TRAINING CNN AND MLP"
 
 def train_MLP(x_train, y_train_cat, x_test, y_test_cat):
+   
    print("Training MLP start!")
    model = Sequential([
     Flatten(input_shape=(28,28)),
@@ -73,27 +74,32 @@ def train_MLP(x_train, y_train_cat, x_test, y_test_cat):
    y_true = np.argmax(y_test_cat, axis = 1)
    y_pred_labels = np.argmax(y_pred, axis = 1)
 
-   '''print("Y_TEST VALS")
-   for i in range(3):
-      print(np.argmax(y_test_cat[i]))
-   print("Y_PRED VALS")
-   for i in range(3):
-      print(np.max(y_pred[i]))
-   print("Y_PRED_LABELS VALS")
-   for i in range(3):
-      print(y_pred_labels[i])
-'''
+
+
+# Collect all the incorrectly predicted images
    incorrect_pred = []
    for i in range(len(y_test_cat)):
-      true_val = np.argmax(y_test_cat[i])
+      true_val = y_true[i]
       if true_val!=y_pred_labels[i]:
          #put the number of image in the list
          incorrect_img_index = i 
          incorrect_pred.append(incorrect_img_index)
    
+   # Prepare dictionary will all needed values for the html file
+   inaccurate_imgs_for_html = []
+   for i in range(len(incorrect_pred)):
+      real_label = y_true[incorrect_pred[i]]
+      img_url = "MLP_and_CNN_training/"+str(real_label)+"/"+str(incorrect_pred[i]+60000)+".png"
+      #img_url = "MLP_and_CNN_training/MLP_and_CNN_training/"+str(real_label)+"/"+str(incorrect_pred[i]+60000)+".png"
+      #img_url = "/home/alina/MLP_and_CNN_training/MLP_and_CNN_training/"+str(real_label)+"/"+str(incorrect_pred[i]+60000)+".png"
+      pred_label = y_pred_labels[incorrect_pred[i]]
+      pred_perct = np.max(y_pred[incorrect_pred[i]])
+      img_info = {"img_url":img_url, "real_label": real_label, "predicted_label": pred_label, "confidence":pred_perct}
+      inaccurate_imgs_for_html.append(img_info)
+   
+      
    #Verifying if the image accuracy checker is working
-   for i in range(3):
-      #print("images", y_test_cat[i])
+      '''#print("images", y_test_cat[i])
       print("Incorrect image:", incorrect_pred[i]+60000)
       #print("Real val:",y_test_cat[incorrect_pred[i]])
       print("Real val:",np.argmax(y_test_cat[incorrect_pred[i]]))
@@ -102,23 +108,30 @@ def train_MLP(x_train, y_train_cat, x_test, y_test_cat):
       print("Prediction perct:",np.max(y_pred[incorrect_pred[i]]))
       print("Prediction val:",np.argmax(y_pred[incorrect_pred[i]]))
       #print("Predicted vals",y_pred_labels[incorrect_pred[i]])
+      '''
 
-      
-      
    
-
-   print("MLP Classification Report:")
-   print(classification_report(y_true, y_pred_labels))
+   #print("MLP Classification Report:")
+   #print(classification_report(y_true, y_pred_labels))
 
    model_path = "MLP_and_CNN_training/mlp_model.h5"
    if not os.path.exists(model_path):  
         model.save(model_path)
     
-   return history
+   return history, inaccurate_imgs_for_html
 
 
 
-
+'''def inaccurate_img_urls(incorrect_pred, y_test_cat, y_pred):
+   # incorrect_pred - contains all the incorrect images, but you'll need to add 60000
+   #Will access the images from the folder
+   #makes table with image, real label, predicdted label and confidence level
+   total_inaccurate_img_url = []
+   for i in incorrect_pred:
+      img_url = str(incorrect_pred[i]+60000)+".png"
+      total_inaccurate_img_url.append(img_url)
+   return total_inaccurate_img_url
+'''
 def train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat):
     print("Training CNN start!")
     model = Sequential([
@@ -148,20 +161,94 @@ def train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat):
     y_true = np.argmax(y_test_cat, axis = 1)
     y_pred_labels = np.argmax(y_pred, axis = 1)
 
-    print("CNN Classification Report:")
-    print(classification_report(y_true, y_pred_labels))
+    #print("CNN Classification Report:")
+    #print(classification_report(y_true, y_pred_labels))
+
+    # Collect all the incorrectly predicted images
+    incorrect_pred = []
+    for i in range(len(y_test_cat)):
+      #true_val = np.argmax(y_test_cat[i])
+      true_val = y_true[i]
+      if true_val!=y_pred_labels[i]:
+         #put the number of image in the list
+         incorrect_img_index = i 
+         incorrect_pred.append(incorrect_img_index)
+   
+   # Prepare dictionary will all needed values for the html file
+    inaccurate_imgs_for_html = []
+    for i in range(len(incorrect_pred)):
+      real_label = y_true[incorrect_pred[i]]
+      #MLP_and_CNN_training/MLP_and_CNN_training/9/4.pngs
+      #img_url = "MLP_and_CNN_training/MLP_and_CNN_training/"+str(real_label)+"/"+str(incorrect_pred[i]+60000)+".png"
+      img_url = "MLP_and_CNN_training/"+str(real_label)+"/"+str(incorrect_pred[i]+60000)+".png"
+      #img_url = "/home/alina/MLP_and_CNN_training/MLP_and_CNN_training/"+str(real_label)+"/"+str(incorrect_pred[i]+60000)+".png"
+      pred_label = y_pred_labels[incorrect_pred[i]]
+      pred_perct = np.max(y_pred[incorrect_pred[i]])
+      img_info = {"img_url":img_url, "real_label": real_label, "predicted_label": pred_label, "confidence":pred_perct}
+      inaccurate_imgs_for_html.append(img_info)
 
     model_path = "MLP_and_CNN_training/cnn_model.h5"
     model.save(model_path)  
-
-    return history
+   #MLP_and_CNN_training/MLP_and_CNN_training/9/4.png
+    return history, inaccurate_imgs_for_html
 
 
 #records all the images that cause the accuracy to drop, alongside their truth/predicted labels and confidence levels
-def inaccuracy_recorder(model, y_test):
-   # if i in y_test doesn't != model predicition for that image ==> inaccuracy
+def html_builder(inaccurate_imgs_for_html, model_name):
+   # will access each dictionary and populate the table
+   # 
+   #   
+   html_content ="""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title> Image table </title>
+        <style>
+            table {
+               border-collapse: collapse;
+            }
+            td {
+               border: 1px solid black;
+               padding: 10px;
+               text-align: center;
+            }
+            img {
+               width: 50px;
+               height: auto;
+            }
+        </style>
+    </head>
+    <body>
+      <h2>Inaccurately Predicted Images</h2>
+      <table>
+         <tr>
+            <th> Image </th>
+            <th> True Label </th>
+            <th> Predicted Label </th>
+            <th> Confidence </th>
+         </tr>
+    """
+   for i in inaccurate_imgs_for_html:
+      html_content += f"""
+      <tr>
+         <td><img src = "{i['img_url']}" alt = "inaccurate img" width = "50" loading="lazy" ></td>
+         <td>{i['real_label']}</td>
+         <td>{i['predicted_label']}</td>
+         <td>{i['confidence']:.2f}</td>
+      </tr>
+      """
+   html_content += """
+   </table>
+   </body>
+   </html>
+   """
+   html_name = model_name+"_inaccurate_img_table.html"
+   with open(html_name, "w", encoding = "utf-8") as f:
+      f.write(html_content)
 
-   pass
+   print("HTML table created: ", html_name)
+   
 
 
 #plots
@@ -204,55 +291,7 @@ def plot_learning_curve(history, title, save_path):
 
 
 
-"""
-for f1 score too:
-from sklearn.metrics import classification_report
 
-# Predictions
-y_pred_mlp = model_mlp.predict(x_test)
-y_pred_cnn = model_cnn.predict(x_test_cnn)
-
-# Convert one-hot to label
-y_true = np.argmax(y_test_cat, axis=1)
-y_pred_labels_mlp = np.argmax(y_pred_mlp, axis=1)
-y_pred_labels_cnn = np.argmax(y_pred_cnn, axis=1)
-
-# Print classification report
-print("MLP Classification Report:\n", classification_report(y_true, y_pred_labels_mlp))
-print("CNN Classification Report:\n", classification_report(y_true, y_pred_labels_cnn))
-
-# includes precision, recall, f1-score, support
-"""
-
-
-#Visualize models
-
-"""
-predictions_mlp = model_mlp.predict(x_test)
-pred_labels = np.argmax(predictions_mlp, axis = 1)
-
-i = 0
-plt.imshow(x_test[i], cmap='gray')
-plt.title(f"True: {y_test[i]}, Predicted: {pred_labels[i]}")
-plt.show()
-output_file = "mlp_graph.png"
-plt.savefig(output_file)
-plt.close()
-"""
-
-
-"""
-predictions_cnn = model_cnn.predict(x_test_cnn)
-pred_labels = np.argmax(predictions_cnn, axis = 1)
-
-i = 0
-plt.imshow(x_test[i], cmap='gray')
-plt.title(f"True: {y_test[i]}, Predicted: {pred_labels[i]}")
-plt.show()
-output_file = "cnn_graph.png"
-plt.savefig(output_file)
-plt.close()
-"""
 
 if __name__== '__main__':
     folder_name = "MLP_and_CNN_training"
@@ -262,7 +301,6 @@ if __name__== '__main__':
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
     
-
     #Flatten + Normalize the images
 
     #x_train = x_train.reshape(-1, 28*28)
@@ -311,13 +349,26 @@ if __name__== '__main__':
     #download_img(folder_name)
 
     #train MLP
-    print("MEOW2")
+    #print("MEOW2")
     #history_mlp = train_MLP(x_train_mlp, y_train_cat, x_test_mlp, y_test_cat)
-    history_mlp = train_MLP(x_train, y_train_cat, x_test, y_test_cat)
-    plot_learning_curve(history_mlp, title_mlp, save_path_mlp)
+    history_mlp, inaccurate_imgs_mlp = train_MLP(x_train, y_train_cat, x_test, y_test_cat)
+    #plot_learning_curve(history_mlp, title_mlp, save_path_mlp)
+    print(inaccurate_imgs_mlp[0])
     tf.keras.backend.clear_session()
-    print("MEOW3")
+    
+    #print("MEOW3")
     #train CNN
-    #history_cnn = train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat)  
+    history_cnn, inaccurate_imgs_cnn = train_CNN(x_train_cnn, y_train_cat, x_test_cnn, y_test_cat)  
     #plot_learning_curve(history_cnn, title_cnn, save_path_cnn)
 
+
+   #build our html file
+
+   #For MLP
+    html_builder(inaccurate_imgs_mlp, title_mlp)
+
+   #For CNN
+    html_builder(inaccurate_imgs_cnn, title_cnn)
+
+    
+    
