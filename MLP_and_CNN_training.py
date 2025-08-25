@@ -76,7 +76,7 @@ def train_MLP(mlp_models, x_train, y_train_cat, x_test, y_test_cat):
     ])'''
    
    total_history = []
-   total_inaccurate_img = []
+   total_inaccurate_img = [] #total_inaccurate_img.append(intersection_img)
    
    
    for model in mlp_models:
@@ -107,7 +107,7 @@ def train_MLP(mlp_models, x_train, y_train_cat, x_test, y_test_cat):
             incorrect_pred.append(incorrect_img_index)
    
    # Prepare dictionary will all needed values for the html file
-      inaccurate_imgs_for_html = []
+      inaccurate_imgs_for_html = [] #  {img_url, true_label, prediction}
       for i in range(len(incorrect_pred)):
          real_label = y_true[incorrect_pred[i]]
          img_url = "MLP_and_CNN_training/"+str(real_label)+"/"+str(incorrect_pred[i]+60000)+".png"
@@ -141,9 +141,36 @@ def train_MLP(mlp_models, x_train, y_train_cat, x_test, y_test_cat):
    sets = [{dic["img_url"] for dic in inner_list} for inner_list in total_inaccurate_img]
    intersection_img = set.intersection(*sets)
    intersection_img = list(intersection_img)
-   #total_inaccurate_img.append(intersection_img)
+
+
+   total_intersection = []
+
+   for i in intersection_img: # search through image url
+
+      target_key = "img_url"
+      target_value = i
+      true_label = ""
+      predictions = []
+      
+
+      for x in range(5):
+         for d in total_inaccurate_img[x]:
+            if target_key in d and d[target_key] == target_value:
+               prediction = d["predicted_label"]
+               title = "mlp_"+str(x)
+               predictions.append({title : prediction})
+               true_label = d["real_label"]
+
+      intersection = {"img_url": i, "true_label": true_label, "predictions": predictions}
+      total_intersection.append(intersection) # list containing dictionary containing stuff.
+      
+
+     
+
+
+   
     
-   return total_history, total_inaccurate_img, intersection_img
+   return total_history, total_inaccurate_img, total_intersection
 
 
 
@@ -239,18 +266,81 @@ def train_CNN(cnn_models, x_train_cnn, y_train_cat, x_test_cnn, y_test_cat):
    set4 = set(total_inaccurate_img[3]["img_url"])
    set5 = set(total_inaccurate_img[4]["img_url"])
    intersection_img = list(set1 & set2 & set3 & set4 & set5)'''
+
+   # make list with dictionarries: [{img = "link", true_label = "value", predictions = [...]}]
    
    sets = [{dic["img_url"] for dic in inner_list} for inner_list in total_inaccurate_img]
    intersection_img = set.intersection(*sets)
    intersection_img = list(intersection_img)
+
+   total_intersection = []
+
+   for i in intersection_img: # search through image url
+
+      target_key = "img_url"
+      target_value = i
+      true_label = ""
+      predictions = []
+      
+
+      # find true labal
+      
+
+      for x in range(5):
+         for d in total_inaccurate_img[x]:
+            if target_key in d and d[target_key] == target_value:
+               prediction = d["predicted_label"]
+               title = "cnn_"+str(x)
+               predictions.append({title : prediction})
+               true_label = d["real_label"]
+
+      intersection = {"img_url": i, "true_label": true_label, "predictions": predictions}
+      total_intersection.append(intersection) # list containing dictionary containing stuff.
+      
+
    #total_inaccurate_img.append(intersection_img)
    
    #MLP_and_CNN_training/MLP_and_CNN_training/9/4.png
-   return total_history, total_inaccurate_img, intersection_img
+   return total_history, total_inaccurate_img, total_intersection
 
  
 
-def html_builder_intersection(intersection_img, model_name):
+
+
+def global_intersection(total_intersection_mlp, total_intersection_cnn):
+   
+   target_key = "img_url"
+   sets = [{dic[target_key]} for dic in total_intersection_mlp] + [{dic[target_key]} for dic in total_intersection_cnn]
+   intersection_img = set.intersection(*sets)
+   intersection_img = list(intersection_img)
+
+   total_intersection = []
+
+   for i in intersection_img: # search through image url
+      true_label = None
+      predictions = {}
+     
+   #
+      for d in total_intersection_mlp:
+         if d[target_key] ==i:
+            predictions["mlp"] = d["predicted_label"]
+            #predictions.update(prediction)
+            true_label = d["real_label"]
+
+      for d in total_intersection_cnn:
+         if d[target_key] ==i:
+            #predictions.update(prediction)
+            predictions["cnn"] = d["predicted_label"]
+         
+
+      intersection = {"img_url": i, "true_label": true_label, "predictions": predictions}
+      total_intersection.append(intersection) # list containing dictionary containing stuff.
+      
+   return total_intersection
+   
+
+
+def html_builder_intersection(total_intersection, model_name):
    html_content ="""
     <!DOCTYPE html>
     <html>
@@ -277,12 +367,20 @@ def html_builder_intersection(intersection_img, model_name):
       <table>
          <tr>
             <th> Image </th>
+            <th> True label </th>
+            <th> Predictions </th>
          </tr>
     """
-   for i in intersection_img: # access the dictionnaries in the inner lists
+   for i in total_intersection: # access the dictionnaries in the inner lists
       html_content += f"""
       <tr>
-         <td><img src = "{i}" alt = "inaccurate img" width = "50" loading="lazy" ></td>
+         <td><img src = "{i["img_url"]}" alt = "inaccurate img" width = "50" loading="lazy" ></td>
+      </tr>
+      <tr>
+         <td>{i["true_label"]}</td>
+      </tr>
+      <tr>
+         <td>{i["predictions"]}</td>
       </tr>
       """
 
@@ -481,14 +579,14 @@ if __name__== '__main__':
     #train MLP
     #print("MEOW2")
     #history_mlp = train_MLP(x_train_mlp, y_train_cat, x_test_mlp, y_test_cat)
-    total_history_mlp, total_inaccurate_img_mlp, intersection_img_mlp = train_MLP(mlp_models, x_train, y_train_cat, x_test, y_test_cat)
+    total_history_mlp, total_inaccurate_img_mlp, total_intersection_mlp = train_MLP(mlp_models, x_train, y_train_cat, x_test, y_test_cat)
     #plot_learning_curve(history_mlp, title_mlp, save_path_mlp)
 
 
     tf.keras.backend.clear_session()
     
     #train CNN
-    total_history_cnn, total_inaccurate_imgs_cnn, intersection_img_cnn = train_CNN(cnn_models, x_train_cnn, y_train_cat, x_test_cnn, y_test_cat)  
+    total_history_cnn, total_inaccurate_imgs_cnn, total_intersection_cnn = train_CNN(cnn_models, x_train_cnn, y_train_cat, x_test_cnn, y_test_cat)  
     #plot_learning_curve(history_cnn, title_cnn, save_path_cnn)
 
 
@@ -498,11 +596,15 @@ if __name__== '__main__':
 
    #For MLP
     html_builder(total_inaccurate_img_mlp, title_mlp)
-    html_builder_intersection(intersection_img_mlp, title_mlp)
+    html_builder_intersection(total_intersection_mlp, title_mlp)
 
    #For CNN
     html_builder(total_inaccurate_imgs_cnn, title_cnn)
-    html_builder_intersection(intersection_img_cnn, title_cnn)
+    html_builder_intersection(total_intersection_cnn, title_cnn)
+
+   #For the intersection between MLP and CNN
+    total_intersection = global_intersection(total_intersection_mlp, total_intersection_cnn)
+    html_builder_intersection(total_intersection, "Both_MLP_CNN")
 
     
     
